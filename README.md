@@ -1,6 +1,6 @@
 # dbMcp — Private Memory MCP Server
 
-Version **0.1.0** · [Changelog](CHANGELOG.md)
+Version **0.2.0** · [Changelog](CHANGELOG.md)
 
 A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
@@ -41,6 +41,7 @@ cp .env.example .env && php artisan key:generate
 # set DB_* in .env to your Postgres, then:
 php artisan migrate
 php artisan memory:token you@example.com   # prints a token once
+php artisan memory:token you@example.com --create   # non-interactive consoles (e.g. Laravel Cloud)
 ```
 
 Connect Claude Code:

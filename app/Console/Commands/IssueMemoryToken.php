@@ -8,7 +8,7 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 
-#[Signature('memory:token {email : Email of the user who owns the memories}')]
+#[Signature('memory:token {email : Email of the user who owns the memories} {--create : Create the user without asking if it does not exist}')]
 #[Description('Issue a Sanctum token to connect an agent to the memory MCP server')]
 class IssueMemoryToken extends Command
 {
@@ -20,7 +20,7 @@ class IssueMemoryToken extends Command
         $email = $this->argument('email');
         $user = User::where('email', $email)->first();
 
-        if ($user === null && $this->confirm("User {$email} does not exist. Create it?")) {
+        if ($user === null && ($this->option('create') || $this->confirm("User {$email} does not exist. Create it?"))) {
             $user = User::create([
                 'name' => $email,
                 'email' => $email,

@@ -33,3 +33,11 @@ test('it creates nothing when the user creation is declined', function () {
     $this->assertDatabaseCount('users', 0);
     $this->assertDatabaseCount('personal_access_tokens', 0);
 });
+
+test('it creates the user without asking when the create option is given', function () {
+    $this->artisan('memory:token', ['email' => 'cloud@example.com', '--create' => true])
+        ->expectsOutputToContain('Token:')
+        ->assertSuccessful();
+
+    expect(User::where('email', 'cloud@example.com')->first()->tokens()->count())->toBe(1);
+});
