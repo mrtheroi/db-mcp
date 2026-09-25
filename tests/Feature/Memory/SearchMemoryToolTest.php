@@ -23,6 +23,19 @@ test('it finds only the authenticated user memories that match the query', funct
         ->assertDontSee('Stranger saves tokens too');
 });
 
+test('it only finds memories of the given project', function () {
+    $user = User::factory()->create();
+
+    remember($user, 'Sanctum tokens in dbmcp', 'Stored hashed', project: 'dbmcp');
+    remember($user, 'Sanctum tokens elsewhere', 'Stored hashed', project: 'other');
+
+    MemoryServer::actingAs($user)
+        ->tool(SearchMemory::class, ['query' => 'sanctum', 'project' => 'other'])
+        ->assertOk()
+        ->assertSee('Sanctum tokens elsewhere')
+        ->assertDontSee('Sanctum tokens in dbmcp');
+});
+
 test('it rejects a limit outside 1 to 20', function (int $limit, string $message) {
     $user = User::factory()->create();
 
@@ -50,4 +63,12 @@ test('it rejects a query that is too long', function () {
     MemoryServer::actingAs($user)
         ->tool(SearchMemory::class, ['query' => str_repeat('a', 256)])
         ->assertHasErrors(['The query field must not be greater than 255 characters.']);
+});
+
+test('it rejects a project that is too long', function () {
+    $user = User::factory()->create();
+
+    MemoryServer::actingAs($user)
+        ->tool(SearchMemory::class, ['query' => 'tokens', 'project' => str_repeat('a', 256)])
+        ->assertHasErrors(['The project field must not be greater than 255 characters.']);
 });

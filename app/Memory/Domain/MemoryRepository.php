@@ -13,7 +13,7 @@ interface MemoryRepository
     /**
      * @return list<Observation>
      */
-    public function search(int $userId, string $query, int $limit): array;
+    public function search(int $userId, string $query, int $limit, ?string $project = null): array;
 
     /**
      * @return list<Observation>

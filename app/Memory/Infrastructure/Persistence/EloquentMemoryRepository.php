@@ -41,9 +41,10 @@ final class EloquentMemoryRepository implements MemoryRepository
         return $record ? $this->toDomain($record) : null;
     }
 
-    public function search(int $userId, string $query, int $limit): array
+    public function search(int $userId, string $query, int $limit, ?string $project = null): array
     {
         return ObservationRecord::where('user_id', $userId)
+            ->when($project, fn ($builder) => $builder->where('project', $project))
             ->whereRaw("search_vector @@ websearch_to_tsquery('english', ?)", [$query])
             ->orderByRaw("ts_rank(search_vector, websearch_to_tsquery('english', ?)) DESC", [$query])
             ->limit($limit)
