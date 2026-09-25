@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-09-25
+
+### Added
+
+- **`memory:revoke` command**: `php artisan memory:revoke {email}` revokes every Sanctum token of a user and reports how many were revoked
+  - Fails with a clear message when the user does not exist
+
+### Security
+
+- **Token revocation without `tinker`**: a leaked token can be invalidated in one command; the user's other agents are disconnected too, and other users' tokens are untouched
+
+---
+
 ## [0.3.1] - 2026-09-25
 
 ### Fixed
