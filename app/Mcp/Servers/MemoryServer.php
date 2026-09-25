@@ -3,6 +3,7 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Tools\GetContext;
+use App\Mcp\Tools\GetMemory;
 use App\Mcp\Tools\SaveMemory;
 use App\Mcp\Tools\SavePrompt;
 use App\Mcp\Tools\SearchMemory;
@@ -34,6 +35,7 @@ class MemoryServer extends Server
         SessionSummary::class,
         GetContext::class,
         SavePrompt::class,
+        GetMemory::class,
     ];
 
     protected array $resources = [

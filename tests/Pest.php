@@ -52,9 +52,9 @@ function something()
     // ..
 }
 
-function remember(User $user, string $title, string $content, string $project = 'dbmcp'): void
+function remember(User $user, string $title, string $content, string $project = 'dbmcp'): Observation
 {
-    (new EloquentMemoryRepository())->save(new Observation(
+    return (new EloquentMemoryRepository())->save(new Observation(
         userId: $user->id,
         sessionId: 'session-1',
         type: 'decision',

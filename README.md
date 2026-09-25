@@ -1,6 +1,6 @@
 # dbMcp — Private Memory MCP Server
 
-Version **0.5.0** · [Changelog](CHANGELOG.md)
+Version **0.6.0** · [Changelog](CHANGELOG.md)
 
 A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
@@ -22,6 +22,7 @@ The agent never touches the database: it discovers the tools with `tools/list` a
 | `search-memory` | `query`*, `limit` (1–20, default 10), `project` | Full-text search (title weighs more than content), ordered by relevance. Pass `project` to search only that project; omit it to search all projects. |
 | `session-summary` | `session_id`*, `project`*, `content`* | Saves the session summary as an observation of type `session_summary`. |
 | `get-context` | `project`* | Returns the 20 most recently updated memories of the project. |
+| `get-memory` | `id`* | Returns the full content of one of the user's own memories. An id that does not exist or belongs to another user returns `Memory not found.` |
 | `save-prompt` | `session_id`*, `content`*, `project` | Stores the user's prompt verbatim. |
 
 ## Stack
@@ -86,6 +87,7 @@ app/
 │   │   └── MemoryServer.php               # Server name, instructions and registered tools
 │   └── Tools/
 │       ├── GetContext.php                 # Recent memories of a project
+│       ├── GetMemory.php                  # Full content of one memory by id
 │       ├── SaveMemory.php                 # Save an observation (validation + upsert)
 │       ├── SavePrompt.php                 # Store the user prompt
 │       ├── SearchMemory.php               # Full-text search with ranking and limit
@@ -118,6 +120,7 @@ routes/
 
 - `/mcp/memory` requires a Sanctum token and returns 401 without one.
 - `user_id` comes from the token, never from tool arguments; every query is scoped to it.
+- `get-memory` answers `Memory not found.` for another user's id, the same as for a missing id, so it does not reveal that the memory exists.
 - Only the SHA-256 hash of each token is stored.
 - A leaked token is revoked with `php artisan memory:revoke <email>`.
 - Each user is limited to 60 requests per minute; beyond that the server returns 429.

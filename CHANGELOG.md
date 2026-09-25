@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-09-25
+
+### Added
+
+- **`get-memory` tool**: returns the full content of one memory by its `id`, in the same `#id [type] title` format as `search-memory`, so agents can read a memory in full on demand
+  - Validates `id` as a required integer of at least 1
+
+### Security
+
+- **Users can only read their own memories**: an id that belongs to another user returns the same `Memory not found.` as an id that does not exist, so the existence of other users' memories is not leaked
+
+---
+
 ## [0.5.0] - 2026-09-25
 
 ### Added
