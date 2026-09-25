@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-09-25
+
+### Fixed
+
+- **Long values no longer crash the tools**: values longer than a `varchar(255)` column used to fail in Postgres and return "An internal server error occurred."; tools now return a validation message instead
+- **Session summaries with long project names**: the generated title `Session summary: {project}` is cut to 255 characters so a 255-character project name is accepted; the full name stays in `project`
+
+### Security
+
+- **Maximum input sizes**: every tool validates `max:255` for identifiers (`session_id`, `type`, `title`, `project`, `topic_key`, `query`) and `max:20000` for `content`, so a single call cannot store megabytes
+
+---
+
 ## [0.3.0] - 2026-09-25
 
 ### Security

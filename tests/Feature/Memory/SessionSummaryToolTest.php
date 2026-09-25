@@ -48,3 +48,36 @@ test('it rejects a session summary without a required field', function (string $
     'project' => ['project', 'The project field is required.'],
     'content' => ['content', 'The content field is required.'],
 ]);
+
+test('it rejects a session summary with a field that is too long', function (string $field, int $length, string $message) {
+    $user = User::factory()->create();
+
+    MemoryServer::actingAs($user)
+        ->tool(SessionSummary::class, [
+            'session_id' => 'session-1',
+            'project' => 'dbmcp',
+            'content' => '## Goal',
+            $field => str_repeat('a', $length),
+        ])
+        ->assertHasErrors([$message]);
+
+    $this->assertDatabaseCount('observations', 0);
+})->with([
+    'session_id' => ['session_id', 256, 'The session id field must not be greater than 255 characters.'],
+    'project' => ['project', 256, 'The project field must not be greater than 255 characters.'],
+    'content' => ['content', 20001, 'The content field must not be greater than 20000 characters.'],
+]);
+
+test('it accepts a project name at the maximum length', function () {
+    $user = User::factory()->create();
+
+    MemoryServer::actingAs($user)
+        ->tool(SessionSummary::class, [
+            'session_id' => 'session-1',
+            'project' => str_repeat('a', 255),
+            'content' => '## Goal',
+        ])
+        ->assertOk();
+
+    $this->assertDatabaseCount('observations', 1);
+});

@@ -95,3 +95,28 @@ test('it rejects a memory without a required field', function (string $field, st
     'type' => ['type', 'The type field is required.'],
     'content' => ['content', 'The content field is required.'],
 ]);
+
+test('it rejects a memory with a field that is too long', function (string $field, int $length, string $message) {
+    $user = User::factory()->create();
+
+    MemoryServer::actingAs($user)
+        ->tool(SaveMemory::class, [
+            'session_id' => 'session-1',
+            'type' => 'decision',
+            'title' => 'Use Postgres full-text search',
+            'content' => 'tsvector + GIN index',
+            'project' => 'dbmcp',
+            'topic_key' => 'architecture/search',
+            $field => str_repeat('a', $length),
+        ])
+        ->assertHasErrors([$message]);
+
+    $this->assertDatabaseCount('observations', 0);
+})->with([
+    'session_id' => ['session_id', 256, 'The session id field must not be greater than 255 characters.'],
+    'type' => ['type', 256, 'The type field must not be greater than 255 characters.'],
+    'title' => ['title', 256, 'The title field must not be greater than 255 characters.'],
+    'project' => ['project', 256, 'The project field must not be greater than 255 characters.'],
+    'topic_key' => ['topic_key', 256, 'The topic key field must not be greater than 255 characters.'],
+    'content' => ['content', 20001, 'The content field must not be greater than 20000 characters.'],
+]);

@@ -20,6 +20,7 @@ class SearchMemory extends Tool
     public function handle(Request $request, MemoryRepository $memories): Response
     {
         $request->validate([
+            'query' => ['max:255'],
             'limit' => ['integer', 'min:1', 'max:20'],
         ]);
 

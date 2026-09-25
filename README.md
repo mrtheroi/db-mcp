@@ -1,6 +1,6 @@
 # dbMcp — Private Memory MCP Server
 
-Version **0.3.0** · [Changelog](CHANGELOG.md)
+Version **0.3.1** · [Changelog](CHANGELOG.md)
 
 A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
@@ -118,7 +118,7 @@ routes/
 - `user_id` comes from the token, never from tool arguments; every query is scoped to it.
 - Only the SHA-256 hash of each token is stored.
 - Each user is limited to 60 requests per minute; beyond that the server returns 429.
-- Every tool validates its input on the server.
+- Every tool validates its input on the server, including maximum lengths (255 characters for identifiers, 20,000 for content).
 
 ## Contributing
 
