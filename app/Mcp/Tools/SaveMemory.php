@@ -20,10 +20,12 @@ class SaveMemory extends Tool
     public function handle(Request $request, SaveObservation $saveObservation): Response
     {
         $request->validate([
-            'session_id' => ['required'],
-            'type' => ['required'],
-            'title' => ['required'],
-            'content' => ['required'],
+            'session_id' => ['required', 'max:255'],
+            'type' => ['required', 'max:255'],
+            'title' => ['required', 'max:255'],
+            'content' => ['required', 'max:20000'],
+            'project' => ['max:255'],
+            'topic_key' => ['max:255'],
         ]);
 
         $observation = $saveObservation(new Observation(

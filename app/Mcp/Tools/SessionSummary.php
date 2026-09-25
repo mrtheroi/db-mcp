@@ -6,6 +6,7 @@ use App\Memory\Application\SaveObservation;
 use App\Memory\Domain\Observation;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
+use Illuminate\Support\Str;
 use Laravel\Mcp\Request;
 use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
@@ -20,9 +21,9 @@ class SessionSummary extends Tool
     public function handle(Request $request, SaveObservation $saveObservation): Response
     {
         $request->validate([
-            'session_id' => ['required'],
-            'project' => ['required'],
-            'content' => ['required'],
+            'session_id' => ['required', 'max:255'],
+            'project' => ['required', 'max:255'],
+            'content' => ['required', 'max:20000'],
         ]);
 
         $project = $request->get('project');
@@ -31,7 +32,7 @@ class SessionSummary extends Tool
             userId: $request->user()->id,
             sessionId: $request->get('session_id'),
             type: 'session_summary',
-            title: "Session summary: {$project}",
+            title: Str::limit("Session summary: {$project}", 255, ''),
             content: $request->get('content'),
             project: $project,
             scope: 'project',

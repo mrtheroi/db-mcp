@@ -39,3 +39,11 @@ test('it requires a project', function () {
         ->tool(GetContext::class, [])
         ->assertHasErrors(['The project field is required.']);
 });
+
+test('it rejects a project name that is too long', function () {
+    $user = User::factory()->create();
+
+    MemoryServer::actingAs($user)
+        ->tool(GetContext::class, ['project' => str_repeat('a', 256)])
+        ->assertHasErrors(['The project field must not be greater than 255 characters.']);
+});

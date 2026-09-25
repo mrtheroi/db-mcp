@@ -20,8 +20,9 @@ class SavePrompt extends Tool
     public function handle(Request $request, PromptRepository $prompts): Response
     {
         $request->validate([
-            'session_id' => ['required'],
-            'content' => ['required'],
+            'session_id' => ['required', 'max:255'],
+            'content' => ['required', 'max:20000'],
+            'project' => ['max:255'],
         ]);
 
         $prompts->save(new UserPrompt(

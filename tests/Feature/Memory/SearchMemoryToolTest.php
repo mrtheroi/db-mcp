@@ -43,3 +43,11 @@ test('it tells the agent when no memories match', function () {
         ->assertOk()
         ->assertSee('No memories found.');
 });
+
+test('it rejects a query that is too long', function () {
+    $user = User::factory()->create();
+
+    MemoryServer::actingAs($user)
+        ->tool(SearchMemory::class, ['query' => str_repeat('a', 256)])
+        ->assertHasErrors(['The query field must not be greater than 255 characters.']);
+});

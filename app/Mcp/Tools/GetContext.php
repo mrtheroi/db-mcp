@@ -20,7 +20,7 @@ class GetContext extends Tool
     public function handle(Request $request, MemoryRepository $memories): Response
     {
         $request->validate([
-            'project' => ['required'],
+            'project' => ['required', 'max:255'],
         ]);
 
         $results = $memories->recent($request->user()->id, $request->get('project'), 20);
