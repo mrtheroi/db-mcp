@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-09-25
+
+### Security
+
+- **Rate limit on `/mcp/memory`**: each user can make at most 60 requests per minute; beyond that the server returns `429 Too Many Requests`
+  - Named limiter `mcp` in `AppServiceProvider`, keyed by the authenticated user, applied after `auth:sanctum`
+  - Protects against agents stuck in a loop and leaked tokens
+
+---
+
 ## [0.2.0] - 2026-09-25
 
 ### Added
