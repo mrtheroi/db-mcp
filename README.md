@@ -1,6 +1,6 @@
 # dbMcp — Private Memory MCP Server
 
-Version **0.4.0** · [Changelog](CHANGELOG.md)
+Version **0.5.0** · [Changelog](CHANGELOG.md)
 
 A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
@@ -19,7 +19,7 @@ The agent never touches the database: it discovers the tools with `tools/list` a
 | Tool | Arguments (* required) | Behavior |
 | --- | --- | --- |
 | `save-memory` | `session_id`*, `type`*, `title`*, `content`*, `project`, `topic_key` | Saves an observation. The same `topic_key` in the same project updates it instead of duplicating it. |
-| `search-memory` | `query`*, `limit` (1–20, default 10) | Full-text search (title weighs more than content), ordered by relevance. |
+| `search-memory` | `query`*, `limit` (1–20, default 10), `project` | Full-text search (title weighs more than content), ordered by relevance. Pass `project` to search only that project; omit it to search all projects. |
 | `session-summary` | `session_id`*, `project`*, `content`* | Saves the session summary as an observation of type `session_summary`. |
 | `get-context` | `project`* | Returns the 20 most recently updated memories of the project. |
 | `save-prompt` | `session_id`*, `content`*, `project` | Stores the user's prompt verbatim. |

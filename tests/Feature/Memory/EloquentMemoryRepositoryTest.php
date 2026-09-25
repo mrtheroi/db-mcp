@@ -89,3 +89,15 @@ test('it returns the most recent memories of a project first, up to the limit', 
 
     expect($titles)->toBe(['newest', 'middle']);
 });
+
+test('it only returns matches of the given project', function () {
+    $user = User::factory()->create();
+    $repository = new EloquentMemoryRepository();
+
+    remember($user, 'Sanctum tokens in dbmcp', 'Stored hashed', project: 'dbmcp');
+    remember($user, 'Sanctum tokens elsewhere', 'Stored hashed', project: 'other');
+
+    $titles = array_map(fn (Observation $o) => $o->title, $repository->search($user->id, 'sanctum', limit: 10, project: 'other'));
+
+    expect($titles)->toBe(['Sanctum tokens elsewhere']);
+});

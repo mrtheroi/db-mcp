@@ -22,9 +22,15 @@ class SearchMemory extends Tool
         $request->validate([
             'query' => ['max:255'],
             'limit' => ['integer', 'min:1', 'max:20'],
+            'project' => ['nullable', 'max:255'],
         ]);
 
-        $results = $memories->search($request->user()->id, $request->get('query'), (int) $request->get('limit', 10));
+        $results = $memories->search(
+            $request->user()->id,
+            $request->get('query'),
+            (int) $request->get('limit', 10),
+            $request->get('project'),
+        );
 
         if ($results === []) {
             return Response::text('No memories found.');
@@ -46,6 +52,7 @@ class SearchMemory extends Tool
         return [
             'query' => $schema->string()->description('Keywords to search for, e.g. "auth tokens".')->required(),
             'limit' => $schema->integer()->description('Maximum number of results, from 1 to 20 (default 10).'),
+            'project' => $schema->string()->description('Only return memories of this project. Omit it to search all projects.'),
         ];
     }
 }
