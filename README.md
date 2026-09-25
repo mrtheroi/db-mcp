@@ -1,58 +1,123 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# dbMcp — Private Memory MCP Server
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Version **0.1.0** · [Changelog](CHANGELOG.md)
 
-## About Laravel
+A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## How it works
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+```
+Agent (Claude Code) ──POST /mcp/memory + Bearer token──▶ auth:sanctum ──▶ MemoryServer
+                                                                         │
+                                        tools/call ──▶ Tool ──▶ Use case / Port ──▶ Postgres
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+The agent never touches the database: it discovers the tools with `tools/list` and invokes them with `tools/call`.
+
+## Tools
+
+| Tool | Arguments (* required) | Behavior |
+| --- | --- | --- |
+| `save-memory` | `session_id`*, `type`*, `title`*, `content`*, `project`, `topic_key` | Saves an observation. The same `topic_key` in the same project updates it instead of duplicating it. |
+| `search-memory` | `query`*, `limit` (1–20, default 10) | Full-text search (title weighs more than content), ordered by relevance. |
+| `session-summary` | `session_id`*, `project`*, `content`* | Saves the session summary as an observation of type `session_summary`. |
+| `get-context` | `project`* | Returns the 20 most recently updated memories of the project. |
+| `save-prompt` | `session_id`*, `content`*, `project` | Stores the user's prompt verbatim. |
+
+## Stack
+
+- Laravel 13 · PHP 8.4 · [`laravel/mcp`](https://github.com/laravel/mcp) v1
+- Laravel Sanctum (bearer tokens)
+- Postgres 17 (Laravel Cloud Serverless Postgres in production)
+- Pest 5
+
+## Getting started
+
+Requirements: PHP 8.4, Composer, Docker, Node 22.19+ (only for the MCP Inspector).
+
+```bash
+composer install
+cp .env.example .env && php artisan key:generate
+# set DB_* in .env to your Postgres, then:
+php artisan migrate
+php artisan memory:token you@example.com   # prints a token once
+```
+
+Connect Claude Code:
+
+```bash
+claude mcp add --transport http memory https://<your-host>/mcp/memory \
+  --header "Authorization: Bearer <token>"
+```
+
+## Configuration
+
+| Variable | Purpose |
+| --- | --- |
+| `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | Postgres connection |
+| `API_VERSION` | Overrides the version in `config/api.php` (optional) |
+
+## Tests
+
+Tests run against a local Postgres 17 container, **never** against the production database (`RefreshDatabase` wipes tables):
+
+```bash
+docker run -d --name dbmcp-pg-test -e POSTGRES_USER=dbmcp -e POSTGRES_PASSWORD=secret \
+  -e POSTGRES_DB=dbmcp_testing -p 5432:5432 pgvector/pgvector:pg17
+./vendor/bin/pest
+```
+
+`phpunit.xml` overrides the `DB_*` variables to point at that container.
+
+## Architecture
+
+Screaming + hexagonal: the domain knows nothing about Laravel, Eloquent or MCP; tools are thin input adapters.
+
+```
+app/
+├── Console/
+│   └── Commands/
+│       └── IssueMemoryToken.php           # memory:token — issues a Sanctum token, creates the user after confirmation
+├── Mcp/
+│   ├── Servers/
+│   │   └── MemoryServer.php               # Server name, instructions and registered tools
+│   └── Tools/
+│       ├── GetContext.php                 # Recent memories of a project
+│       ├── SaveMemory.php                 # Save an observation (validation + upsert)
+│       ├── SavePrompt.php                 # Store the user prompt
+│       ├── SearchMemory.php               # Full-text search with ranking and limit
+│       └── SessionSummary.php             # Save the session summary
+├── Memory/
+│   ├── Application/
+│   │   └── SaveObservation.php            # Use case: upsert by topic_key
+│   ├── Domain/
+│   │   ├── MemoryRepository.php           # Port: save, find, findByTopicKey, search, recent
+│   │   ├── Observation.php                # Immutable memory entity
+│   │   ├── PromptRepository.php           # Port: save prompts
+│   │   └── UserPrompt.php                 # Immutable prompt entity
+│   └── Infrastructure/
+│       └── Persistence/
+│           ├── EloquentMemoryRepository.php   # MemoryRepository adapter (Postgres full-text search)
+│           ├── EloquentPromptRepository.php   # PromptRepository adapter
+│           ├── ObservationRecord.php          # Eloquent model for observations
+│           └── UserPromptRecord.php           # Eloquent model for user_prompts
+├── Models/
+│   └── User.php                           # User with HasApiTokens
+└── Providers/
+    └── AppServiceProvider.php             # Binds ports to their adapters
+config/
+└── api.php                                # Server version
+routes/
+└── ai.php                                 # /mcp/memory route with auth:sanctum
+```
+
+## Security
+
+- `/mcp/memory` requires a Sanctum token and returns 401 without one.
+- `user_id` comes from the token, never from tool arguments; every query is scoped to it.
+- Only the SHA-256 hash of each token is stored.
+- Every tool validates its input on the server.
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Strict TDD (red → green → refactor), one behavior per test, conventional commits. Keep `config/api.php`, `CHANGELOG.md` and this README in sync on every functional change.
