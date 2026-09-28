@@ -76,20 +76,6 @@ test('it returns at most the requested number of results', function () {
     expect($repository->search($user->id, 'sanctum', limit: 2))->toHaveCount(2);
 });
 
-test('it returns the most recent memories of a project first, up to the limit', function () {
-    $user = User::factory()->create();
-    $repository = new EloquentMemoryRepository();
-
-    foreach (['oldest', 'middle', 'newest'] as $title) {
-        remember($user, $title, 'Some content');
-        $this->travel(1)->minutes();
-    }
-
-    $titles = array_map(fn (Observation $o) => $o->title, $repository->recent($user->id, 'dbmcp', limit: 2));
-
-    expect($titles)->toBe(['newest', 'middle']);
-});
-
 test('it only returns matches of the given project', function () {
     $user = User::factory()->create();
     $repository = new EloquentMemoryRepository();

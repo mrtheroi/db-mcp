@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-09-28
+
+### Changed
+
+- **`get-context` returns a bounded, layered context** instead of the 20 most recent memories in full, so its size stays predictable when injected at every session start
+  - `## Latest session`: only the most recent `session_summary` of the project, in full; older summaries are omitted because each summary is cumulative
+  - `## Project knowledge`: up to 20 memories with a `topic_key`, most recently updated first, each as one line with a 300-character preview of its content (newlines collapsed, `…` when truncated)
+  - `## Recent memories`: up to 10 other memories, most recently updated first, title only
+  - Empty sections are omitted, and the output ends with a hint to call `get-memory` with an id to read a memory in full
+  - Still scoped to the authenticated user and the normalized project; `No context found for project {project}.` when there is nothing to show
+
+---
+
 ## [0.7.0] - 2026-09-28
 
 ### Changed

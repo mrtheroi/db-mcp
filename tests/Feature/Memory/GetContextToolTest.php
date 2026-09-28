@@ -58,3 +58,101 @@ test('it finds the context of a project written with a different spelling', func
         ->assertOk()
         ->assertSee('Use Postgres full-text search');
 });
+
+test('it shows only the latest session summary, in full', function () {
+    $user = User::factory()->create();
+
+    remember($user, 'Session one', 'Older summary content', type: 'session_summary');
+    $this->travel(1)->minutes();
+    $latest = remember($user, 'Session two', "Latest summary content\nwith a second line", type: 'session_summary');
+
+    MemoryServer::actingAs($user)
+        ->tool(GetContext::class, ['project' => 'dbmcp'])
+        ->assertOk()
+        ->assertSee("## Latest session\n#{$latest->id} [session_summary] Session two\nLatest summary content\nwith a second line")
+        ->assertDontSee('Session one')
+        ->assertDontSee('Older summary content');
+});
+
+test('it lists topic-key memories under project knowledge with a preview of their content', function () {
+    $user = User::factory()->create();
+
+    $long = remember($user, 'Auth model', "Line one\nline two ".str_repeat('é', 300), topicKey: 'architecture/auth');
+    $short = remember($user, 'Search engine', 'Postgres full-text search', topicKey: 'architecture/search');
+
+    $preview = mb_substr('Line one line two '.str_repeat('é', 300), 0, 300);
+
+    MemoryServer::actingAs($user)
+        ->tool(GetContext::class, ['project' => 'dbmcp'])
+        ->assertOk()
+        ->assertSee("## Project knowledge\n")
+        ->assertSee("- #{$long->id} [decision] Auth model: {$preview}…")
+        ->assertSee("- #{$short->id} [decision] Search engine: Postgres full-text search")
+        ->assertDontSee('Postgres full-text search…');
+});
+
+test('it lists memories without a topic key under recent memories, title only', function () {
+    $user = User::factory()->create();
+
+    $memory = remember($user, 'Fixed flaky token test', 'Root cause: clock drift in the fixture');
+
+    MemoryServer::actingAs($user)
+        ->tool(GetContext::class, ['project' => 'dbmcp'])
+        ->assertOk()
+        ->assertSee("## Recent memories\n- #{$memory->id} [decision] Fixed flaky token test")
+        ->assertDontSee('Root cause: clock drift in the fixture');
+});
+
+test('it caps project knowledge at 20 and recent memories at 10, dropping the oldest', function () {
+    $user = User::factory()->create();
+
+    foreach (range(1, 21) as $n) {
+        remember($user, sprintf('Knowledge %02d', $n), 'Some content', topicKey: "topic/{$n}");
+        $this->travel(1)->minutes();
+    }
+
+    foreach (range(1, 11) as $n) {
+        remember($user, sprintf('Recent %02d', $n), 'Some content');
+        $this->travel(1)->minutes();
+    }
+
+    MemoryServer::actingAs($user)
+        ->tool(GetContext::class, ['project' => 'dbmcp'])
+        ->assertOk()
+        ->assertSee(['Knowledge 21', 'Knowledge 02', 'Recent 11', 'Recent 02'])
+        ->assertDontSee('Knowledge 01')
+        ->assertDontSee('Recent 01');
+});
+
+test('it omits empty sections and ends with a hint to read memories in full', function () {
+    $user = User::factory()->create();
+
+    $memory = remember($user, 'Fixed flaky token test', 'Root cause: clock drift');
+
+    MemoryServer::actingAs($user)
+        ->tool(GetContext::class, ['project' => 'dbmcp'])
+        ->assertOk()
+        ->assertSee("## Recent memories\n- #{$memory->id} [decision] Fixed flaky token test\n\nUse get-memory with an id to read a memory in full.")
+        ->assertDontSee('## Latest session')
+        ->assertDontSee('## Project knowledge');
+});
+
+test('it never shows session summaries or project knowledge of another user or project', function () {
+    $user = User::factory()->create();
+    $stranger = User::factory()->create();
+
+    remember($user, 'Own summary', 'Own session', type: 'session_summary');
+    remember($user, 'Own knowledge', 'Own topic', topicKey: 'architecture/own');
+    $this->travel(1)->minutes();
+    remember($stranger, 'Stranger summary', 'Must never leak', type: 'session_summary');
+    remember($stranger, 'Stranger knowledge', 'Must never leak', topicKey: 'architecture/own');
+    remember($user, 'Other project summary', 'Wrong project', project: 'other-app', type: 'session_summary');
+    remember($user, 'Other project knowledge', 'Wrong project', project: 'other-app', topicKey: 'architecture/own');
+
+    MemoryServer::actingAs($user)
+        ->tool(GetContext::class, ['project' => 'dbmcp'])
+        ->assertOk()
+        ->assertSee(['Own summary', 'Own knowledge'])
+        ->assertDontSee('Stranger')
+        ->assertDontSee('Other project');
+});
