@@ -47,3 +47,14 @@ test('it rejects a project name that is too long', function () {
         ->tool(GetContext::class, ['project' => str_repeat('a', 256)])
         ->assertHasErrors(['The project field must not be greater than 255 characters.']);
 });
+
+test('it finds the context of a project written with a different spelling', function () {
+    $user = User::factory()->create();
+
+    remember($user, 'Use Postgres full-text search', 'tsvector + GIN');
+
+    MemoryServer::actingAs($user)
+        ->tool(GetContext::class, ['project' => ' DbMcp '])
+        ->assertOk()
+        ->assertSee('Use Postgres full-text search');
+});

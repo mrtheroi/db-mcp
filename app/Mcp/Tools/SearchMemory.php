@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Memory\Domain\MemoryRepository;
 use App\Memory\Domain\Observation;
+use App\Memory\Domain\ProjectName;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Laravel\Mcp\Request;
@@ -29,7 +30,7 @@ class SearchMemory extends Tool
             $request->user()->id,
             $request->get('query'),
             (int) $request->get('limit', 10),
-            $request->get('project'),
+            ProjectName::normalize($request->get('project')),
         );
 
         if ($results === []) {

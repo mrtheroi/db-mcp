@@ -4,17 +4,21 @@ namespace App\Memory\Domain;
 
 final readonly class Observation
 {
+    public ?string $project;
+
     public function __construct(
         public int $userId,
         public string $sessionId,
         public string $type,
         public string $title,
         public string $content,
-        public ?string $project,
+        ?string $project,
         public string $scope,
         public ?string $topicKey,
         public ?int $id = null,
-    ) {}
+    ) {
+        $this->project = ProjectName::normalize($project);
+    }
 
     public function withId(int $id): self
     {

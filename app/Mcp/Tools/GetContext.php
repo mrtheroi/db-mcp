@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Memory\Domain\MemoryRepository;
 use App\Memory\Domain\Observation;
+use App\Memory\Domain\ProjectName;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Laravel\Mcp\Request;
@@ -23,10 +24,12 @@ class GetContext extends Tool
             'project' => ['required', 'max:255'],
         ]);
 
-        $results = $memories->recent($request->user()->id, $request->get('project'), 20);
+        $project = ProjectName::normalize($request->get('project'));
+
+        $results = $memories->recent($request->user()->id, $project, 20);
 
         if ($results === []) {
-            return Response::text("No context found for project {$request->get('project')}.");
+            return Response::text("No context found for project {$project}.");
         }
 
         return Response::text(implode("\n\n", array_map(

@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-09-28
+
+### Changed
+
+- **Project names are normalized**: every `project` is trimmed, lowercased, and has repeated `--` collapsed to `-` and `__` to `_` (the same rule as Engram's `CanonicalizeProjectName`), so `dbmcp`, `dbMcp` and ` DbMcp ` are the same project
+  - Applied on write: `save-memory`, `session-summary` and `save-prompt` store the normalized name; an empty or whitespace-only `project` is stored as no project
+  - Applied on query: `get-context` and the `project` filter of `search-memory` normalize the argument, so `DbMcp` finds memories saved as `dbmcp`
+  - The `topic_key` upsert matches across spellings: saving with `project: DbMcp` updates the existing `dbmcp` memory instead of creating a new one
+  - **Note**: existing rows are not migrated; names stored before this version keep their original spelling
+
+---
+
 ## [0.6.0] - 2026-09-25
 
 ### Added

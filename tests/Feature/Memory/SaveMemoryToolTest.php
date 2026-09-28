@@ -120,3 +120,43 @@ test('it rejects a memory with a field that is too long', function (string $fiel
     'topic_key' => ['topic_key', 256, 'The topic key field must not be greater than 255 characters.'],
     'content' => ['content', 20001, 'The content field must not be greater than 20000 characters.'],
 ]);
+
+test('it stores the project name normalized', function () {
+    $user = User::factory()->create();
+
+    MemoryServer::actingAs($user)
+        ->tool(SaveMemory::class, [
+            'session_id' => 'session-1',
+            'type' => 'decision',
+            'title' => 'Use Postgres full-text search',
+            'content' => 'tsvector + GIN index',
+            'project' => ' DbMcp ',
+        ])
+        ->assertOk();
+
+    $this->assertDatabaseHas('observations', ['title' => 'Use Postgres full-text search', 'project' => 'dbmcp']);
+});
+
+test('it updates the existing memory when the topic key is repeated with a different project spelling', function () {
+    $user = User::factory()->create();
+    $memory = [
+        'session_id' => 'session-1',
+        'type' => 'architecture',
+        'title' => 'Auth model',
+        'content' => 'Sessions with cookies',
+        'project' => 'dbmcp',
+        'topic_key' => 'architecture/auth-model',
+    ];
+
+    MemoryServer::actingAs($user)->tool(SaveMemory::class, $memory)->assertOk();
+    MemoryServer::actingAs($user)
+        ->tool(SaveMemory::class, [...$memory, 'project' => 'DbMcp', 'content' => 'Sanctum bearer tokens'])
+        ->assertOk();
+
+    $this->assertDatabaseCount('observations', 1);
+    $this->assertDatabaseHas('observations', [
+        'project' => 'dbmcp',
+        'topic_key' => 'architecture/auth-model',
+        'content' => 'Sanctum bearer tokens',
+    ]);
+});
