@@ -64,3 +64,17 @@ test('it rejects a prompt with a field that is too long', function (string $fiel
     'project' => ['project', 256, 'The project field must not be greater than 255 characters.'],
     'content' => ['content', 20001, 'The content field must not be greater than 20000 characters.'],
 ]);
+
+test('it stores the project name normalized', function () {
+    $user = User::factory()->create();
+
+    MemoryServer::actingAs($user)
+        ->tool(SavePrompt::class, [
+            'session_id' => 'session-1',
+            'project' => ' DbMcp ',
+            'content' => 'Add full-text search to the memory server',
+        ])
+        ->assertOk();
+
+    $this->assertDatabaseHas('user_prompts', ['session_id' => 'session-1', 'project' => 'dbmcp']);
+});

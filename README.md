@@ -1,6 +1,6 @@
 # dbMcp — Private Memory MCP Server
 
-Version **0.6.0** · [Changelog](CHANGELOG.md)
+Version **0.7.0** · [Changelog](CHANGELOG.md)
 
 A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
@@ -16,9 +16,11 @@ The agent never touches the database: it discovers the tools with `tools/list` a
 
 ## Tools
 
+Project names are normalized on write and on query (trimmed, lowercased, repeated `--`/`__` collapsed), so `dbmcp`, `dbMcp` and ` DbMcp ` refer to the same project.
+
 | Tool | Arguments (* required) | Behavior |
 | --- | --- | --- |
-| `save-memory` | `session_id`*, `type`*, `title`*, `content`*, `project`, `topic_key` | Saves an observation. The same `topic_key` in the same project updates it instead of duplicating it. |
+| `save-memory` | `session_id`*, `type`*, `title`*, `content`*, `project`, `topic_key` | Saves an observation. The same `topic_key` in the same project (under any spelling) updates it instead of duplicating it. |
 | `search-memory` | `query`*, `limit` (1–20, default 10), `project` | Full-text search (title weighs more than content), ordered by relevance. Pass `project` to search only that project; omit it to search all projects. |
 | `session-summary` | `session_id`*, `project`*, `content`* | Saves the session summary as an observation of type `session_summary`. |
 | `get-context` | `project`* | Returns the 20 most recently updated memories of the project. |
@@ -98,6 +100,7 @@ app/
 │   ├── Domain/
 │   │   ├── MemoryRepository.php           # Port: save, find, findByTopicKey, search, recent
 │   │   ├── Observation.php                # Immutable memory entity
+│   │   ├── ProjectName.php                # Normalizes project names
 │   │   ├── PromptRepository.php           # Port: save prompts
 │   │   └── UserPrompt.php                 # Immutable prompt entity
 │   └── Infrastructure/

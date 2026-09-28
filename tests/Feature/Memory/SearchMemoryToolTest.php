@@ -72,3 +72,16 @@ test('it rejects a project that is too long', function () {
         ->tool(SearchMemory::class, ['query' => 'tokens', 'project' => str_repeat('a', 256)])
         ->assertHasErrors(['The project field must not be greater than 255 characters.']);
 });
+
+test('it filters by a project written with a different spelling', function () {
+    $user = User::factory()->create();
+
+    remember($user, 'Sanctum tokens in dbmcp', 'Stored hashed', project: 'dbmcp');
+    remember($user, 'Sanctum tokens elsewhere', 'Stored hashed', project: 'other');
+
+    MemoryServer::actingAs($user)
+        ->tool(SearchMemory::class, ['query' => 'sanctum', 'project' => 'DbMcp'])
+        ->assertOk()
+        ->assertSee('Sanctum tokens in dbmcp')
+        ->assertDontSee('Sanctum tokens elsewhere');
+});
