@@ -1,6 +1,6 @@
 # dbMcp — Private Memory MCP Server
 
-Version **0.8.0** · [Changelog](CHANGELOG.md)
+Version **0.9.0** · [Changelog](CHANGELOG.md)
 
 A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
@@ -26,6 +26,22 @@ Project names are normalized on write and on query (trimmed, lowercased, repeate
 | `get-context` | `project`* | Returns a bounded context of the project: the latest session summary in full, up to 20 topic-key memories with a 300-character preview, and up to 10 other recent memories by title. |
 | `get-memory` | `id`* | Returns the full content of one of the user's own memories. An id that does not exist or belongs to another user returns `Memory not found.` |
 | `save-prompt` | `session_id`*, `content`*, `project` | Stores the user's prompt verbatim. |
+
+## HTTP context endpoint
+
+`GET /api/context?project={name}` returns exactly the text of `get-context` as `text/plain`, so shell hooks (e.g. a Claude Code `SessionStart` hook) can load the project context without speaking MCP JSON-RPC. It uses the same Sanctum bearer tokens and the same rate limit (60 requests per minute per user, shared with MCP requests).
+
+```bash
+curl -sf -H "Authorization: Bearer <token>" \
+  "https://<your-host>/api/context?project=dbmcp"
+```
+
+| Status | When |
+| --- | --- |
+| `200` | The context, or `No context found for project {project}.` |
+| `401` | Missing or invalid token |
+| `422` | `project` missing, not a string, or longer than 255 characters |
+| `429` | Rate limit exceeded |
 
 ## Stack
 
@@ -84,11 +100,14 @@ app/
 │   └── Commands/
 │       ├── IssueMemoryToken.php           # memory:token — issues a Sanctum token, creates the user after confirmation
 │       └── RevokeMemoryTokens.php         # memory:revoke — revokes every token of a user
+├── Http/
+│   └── Controllers/
+│       └── ContextController.php          # GET /api/context — plain-text project context
 ├── Mcp/
 │   ├── Servers/
 │   │   └── MemoryServer.php               # Server name, instructions and registered tools
 │   └── Tools/
-│       ├── GetContext.php                 # Recent memories of a project
+│       ├── GetContext.php                 # Layered context of a project (via BuildProjectContext)
 │       ├── GetMemory.php                  # Full content of one memory by id
 │       ├── SaveMemory.php                 # Save an observation (validation + upsert)
 │       ├── SavePrompt.php                 # Store the user prompt
@@ -96,6 +115,7 @@ app/
 │       └── SessionSummary.php             # Save the session summary
 ├── Memory/
 │   ├── Application/
+│   │   ├── BuildProjectContext.php        # Use case: layered project context text (tool + HTTP)
 │   │   └── SaveObservation.php            # Use case: upsert by topic_key
 │   ├── Domain/
 │   │   ├── MemoryRepository.php           # Port: save, find, findByTopicKey, search, latestSessionSummary, withTopicKey, recentWithoutTopicKey
@@ -116,7 +136,8 @@ app/
 config/
 └── api.php                                # Server version
 routes/
-└── ai.php                                 # /mcp/memory route with auth:sanctum
+├── ai.php                                 # /mcp/memory route with auth:sanctum
+└── api.php                                # /api/context route with auth:sanctum + throttle:mcp
 ```
 
 ## Security
