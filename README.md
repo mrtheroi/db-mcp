@@ -1,6 +1,6 @@
 # dbMcp — Private Memory MCP Server
 
-Version **0.9.0** · [Changelog](CHANGELOG.md)
+Version **0.10.0** · [Changelog](CHANGELOG.md)
 
 A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
@@ -42,6 +42,41 @@ curl -sf -H "Authorization: Bearer <token>" \
 | `401` | Missing or invalid token |
 | `422` | `project` missing, not a string, or longer than 255 characters |
 | `429` | Rate limit exceeded |
+
+## Claude Code SessionStart hook
+
+`hooks/claude-code/session-start.sh` loads the project context into every Claude Code session through `GET /api/context`. The project is the basename of the git top-level of the session `cwd` (or of `cwd` itself outside git); the server normalizes it. It prints a short protocol block for the `db-memory` tools (additive to Engram) followed by the context. The token is passed to curl through stdin, so it never appears in the process list. If the config is missing or incomplete, the request fails or it takes longer than 3 seconds, it prints nothing and exits `0`, so it never blocks a session.
+
+1. Create `~/.config/memry/config.json` (or point `MEMRY_CONFIG` to another path) and restrict it to your user:
+
+   ```json
+   {"url": "https://<your-host>", "token": "<token>"}
+   ```
+
+   ```bash
+   chmod 600 ~/.config/memry/config.json
+   ```
+
+2. Register the hook in `~/.claude/settings.json` (requires `jq`, `git` and `curl`):
+
+   ```json
+   {
+     "hooks": {
+       "SessionStart": [
+         {
+           "matcher": "startup|resume|clear|compact",
+           "hooks": [
+             {
+               "type": "command",
+               "command": "/path/to/dbMcp/hooks/claude-code/session-start.sh",
+               "timeout": 10
+             }
+           ]
+         }
+       ]
+     }
+   }
+   ```
 
 ## Stack
 
@@ -135,6 +170,9 @@ app/
     └── AppServiceProvider.php             # Binds ports to their adapters
 config/
 └── api.php                                # Server version
+hooks/
+└── claude-code/
+    └── session-start.sh                   # SessionStart hook: prints the project context via /api/context
 routes/
 ├── ai.php                                 # /mcp/memory route with auth:sanctum
 └── api.php                                # /api/context route with auth:sanctum + throttle:mcp
