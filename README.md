@@ -1,6 +1,6 @@
 # dbMcp — Private Memory MCP Server
 
-Version **0.7.0** · [Changelog](CHANGELOG.md)
+Version **0.8.0** · [Changelog](CHANGELOG.md)
 
 A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
@@ -23,7 +23,7 @@ Project names are normalized on write and on query (trimmed, lowercased, repeate
 | `save-memory` | `session_id`*, `type`*, `title`*, `content`*, `project`, `topic_key` | Saves an observation. The same `topic_key` in the same project (under any spelling) updates it instead of duplicating it. |
 | `search-memory` | `query`*, `limit` (1–20, default 10), `project` | Full-text search (title weighs more than content), ordered by relevance. Pass `project` to search only that project; omit it to search all projects. |
 | `session-summary` | `session_id`*, `project`*, `content`* | Saves the session summary as an observation of type `session_summary`. |
-| `get-context` | `project`* | Returns the 20 most recently updated memories of the project. |
+| `get-context` | `project`* | Returns a bounded context of the project: the latest session summary in full, up to 20 topic-key memories with a 300-character preview, and up to 10 other recent memories by title. |
 | `get-memory` | `id`* | Returns the full content of one of the user's own memories. An id that does not exist or belongs to another user returns `Memory not found.` |
 | `save-prompt` | `session_id`*, `content`*, `project` | Stores the user's prompt verbatim. |
 
@@ -98,7 +98,7 @@ app/
 │   ├── Application/
 │   │   └── SaveObservation.php            # Use case: upsert by topic_key
 │   ├── Domain/
-│   │   ├── MemoryRepository.php           # Port: save, find, findByTopicKey, search, recent
+│   │   ├── MemoryRepository.php           # Port: save, find, findByTopicKey, search, latestSessionSummary, withTopicKey, recentWithoutTopicKey
 │   │   ├── Observation.php                # Immutable memory entity
 │   │   ├── ProjectName.php                # Normalizes project names
 │   │   ├── PromptRepository.php           # Port: save prompts

@@ -53,11 +53,40 @@ final class EloquentMemoryRepository implements MemoryRepository
             ->all();
     }
 
-    public function recent(int $userId, string $project, int $limit): array
+    public function latestSessionSummary(int $userId, string $project): ?Observation
+    {
+        $record = ObservationRecord::where('user_id', $userId)
+            ->where('project', $project)
+            ->where('type', 'session_summary')
+            ->latest('updated_at')
+            ->latest('id')
+            ->first();
+
+        return $record ? $this->toDomain($record) : null;
+    }
+
+    public function withTopicKey(int $userId, string $project, int $limit): array
     {
         return ObservationRecord::where('user_id', $userId)
             ->where('project', $project)
+            ->where('type', '!=', 'session_summary')
+            ->whereNotNull('topic_key')
             ->latest('updated_at')
+            ->latest('id')
+            ->limit($limit)
+            ->get()
+            ->map(fn (ObservationRecord $record) => $this->toDomain($record))
+            ->all();
+    }
+
+    public function recentWithoutTopicKey(int $userId, string $project, int $limit): array
+    {
+        return ObservationRecord::where('user_id', $userId)
+            ->where('project', $project)
+            ->where('type', '!=', 'session_summary')
+            ->whereNull('topic_key')
+            ->latest('updated_at')
+            ->latest('id')
             ->limit($limit)
             ->get()
             ->map(fn (ObservationRecord $record) => $this->toDomain($record))

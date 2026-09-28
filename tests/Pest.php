@@ -52,16 +52,16 @@ function something()
     // ..
 }
 
-function remember(User $user, string $title, string $content, string $project = 'dbmcp'): Observation
+function remember(User $user, string $title, string $content, string $project = 'dbmcp', string $type = 'decision', ?string $topicKey = null): Observation
 {
     return (new EloquentMemoryRepository())->save(new Observation(
         userId: $user->id,
         sessionId: 'session-1',
-        type: 'decision',
+        type: $type,
         title: $title,
         content: $content,
         project: $project,
         scope: 'project',
-        topicKey: null,
+        topicKey: $topicKey,
     ));
 }

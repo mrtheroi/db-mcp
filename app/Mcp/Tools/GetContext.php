@@ -26,16 +26,45 @@ class GetContext extends Tool
 
         $project = ProjectName::normalize($request->get('project'));
 
-        $results = $memories->recent($request->user()->id, $project, 20);
+        $userId = $request->user()->id;
+        $latestSession = $memories->latestSessionSummary($userId, $project);
+        $knowledge = $memories->withTopicKey($userId, $project, 20);
+        $recent = $memories->recentWithoutTopicKey($userId, $project, 10);
 
-        if ($results === []) {
+        if ($latestSession === null && $knowledge === [] && $recent === []) {
             return Response::text("No context found for project {$project}.");
         }
 
-        return Response::text(implode("\n\n", array_map(
-            fn (Observation $observation) => "#{$observation->id} [{$observation->type}] {$observation->title}\n{$observation->content}",
-            $results,
-        )));
+        $sections = [];
+
+        if ($latestSession !== null) {
+            $sections[] = "## Latest session\n#{$latestSession->id} [{$latestSession->type}] {$latestSession->title}\n{$latestSession->content}";
+        }
+
+        if ($knowledge !== []) {
+            $sections[] = "## Project knowledge\n".implode("\n", array_map(
+                fn (Observation $observation) => "- #{$observation->id} [{$observation->type}] {$observation->title}: {$this->preview($observation->content)}",
+                $knowledge,
+            ));
+        }
+
+        if ($recent !== []) {
+            $sections[] = "## Recent memories\n".implode("\n", array_map(
+                fn (Observation $observation) => "- #{$observation->id} [{$observation->type}] {$observation->title}",
+                $recent,
+            ));
+        }
+
+        $sections[] = 'Use get-memory with an id to read a memory in full.';
+
+        return Response::text(implode("\n\n", $sections));
+    }
+
+    private function preview(string $content): string
+    {
+        $flat = preg_replace('/\s*\R\s*/u', ' ', trim($content));
+
+        return mb_strlen($flat) > 300 ? mb_substr($flat, 0, 300).'…' : $flat;
     }
 
     /**

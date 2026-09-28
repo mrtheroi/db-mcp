@@ -15,8 +15,15 @@ interface MemoryRepository
      */
     public function search(int $userId, string $query, int $limit, ?string $project = null): array;
 
+    public function latestSessionSummary(int $userId, string $project): ?Observation;
+
     /**
      * @return list<Observation>
      */
-    public function recent(int $userId, string $project, int $limit): array;
+    public function withTopicKey(int $userId, string $project, int $limit): array;
+
+    /**
+     * @return list<Observation>
+     */
+    public function recentWithoutTopicKey(int $userId, string $project, int $limit): array;
 }
