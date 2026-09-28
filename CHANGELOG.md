@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.0] - 2026-09-28
+
+### Added
+
+- **`GET /api/context?project={name}`**: a plain HTTP endpoint that returns exactly the text of the `get-context` tool, so a shell hook (e.g. a Claude Code `SessionStart` hook using `curl`) can load the project context without speaking MCP JSON-RPC
+  - Authenticated with the same Sanctum bearer tokens as the MCP route (`401` without a valid token) and scoped to the authenticated user
+  - Shares the `mcp` rate limiter (60 requests per minute per user, counted together with MCP requests)
+  - `project` is a required string of at most 255 characters (`422` with the validation errors otherwise) and is normalized like in `get-context`
+  - Responds `200` with `Content-Type: text/plain; charset=UTF-8`, including `No context found for project {project}.` when there is nothing to show
+
+---
+
 ## [0.8.0] - 2026-09-28
 
 ### Changed
