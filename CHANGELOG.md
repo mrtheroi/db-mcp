@@ -5,6 +5,18 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.0] - 2026-09-28
+
+### Added
+
+- **`hooks/claude-code/session-start.sh`**: a Claude Code `SessionStart` hook that loads the memry context of the current project into the session through `GET /api/context`
+  - Reads `url` and `token` from `${MEMRY_CONFIG:-~/.config/memry/config.json}`; the token is only sent in the `Authorization` header, passed to curl through stdin (`-H @-`) so it never appears in the process list
+  - The project is the basename of the git top-level of the session `cwd` (the basename of `cwd` outside git, the working directory when `cwd` is empty), URL-encoded and normalized by the server
+  - Prints a short protocol block for the `db-memory` MCP tools (additive to Engram) followed by the endpoint body
+  - Fails silently: a missing or incomplete config, a curl error, an HTTP error or the 3-second timeout print nothing, and the script always exits `0`
+
+---
+
 ## [0.9.0] - 2026-09-28
 
 ### Added
