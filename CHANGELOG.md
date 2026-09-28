@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-09-28
+
+### Added
+
+- **Passwordless email login**: a one-time code sent by email is exchanged for a Sanctum token, so the `memry` CLI can log in entirely from the terminal
+  - `POST /api/auth/code` with `{email}` (required string email of at most 255 characters, trimmed and lowercased) emails a random 6-digit code valid for 10 minutes and always answers `202` with `{"message": "If the email is valid, a login code has been sent."}`
+  - Issuing a new code invalidates the previous unused codes of the email; only an HMAC-SHA256 hash of the code (keyed with the app key) is stored, in the new `login_codes` table
+  - `POST /api/auth/token` with `{email, code}` (`code` is a 6-digit string) answers `200` with `{"token": "..."}`, a Sanctum token named `memry-cli` that authenticates the MCP route and `GET /api/context`
+  - Signup is open: an unknown email creates the user (name from the email local part, random password, email marked as verified); a known email reuses its user
+  - A wrong, expired, already used or superseded code answers `422` with `{"message": "Invalid or expired code."}`; each wrong code counts as an attempt and the 5th wrong attempt burns the code, so even the right code fails afterwards
+  - Rate limited: `auth-code` allows 3 requests per 10 minutes per email and 10 per hour per IP, `auth-token` allows 20 requests per minute per IP (`429` when exceeded)
+
+---
+
 ## [0.10.0] - 2026-09-28
 
 ### Added
