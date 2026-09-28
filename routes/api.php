@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Auth\LoginCodeController;
+use App\Http\Controllers\Auth\TokenController;
 use App\Http\Controllers\ContextController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -9,3 +11,6 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::get('/context', ContextController::class)->middleware(['auth:sanctum', 'throttle:mcp']);
+
+Route::post('/auth/code', LoginCodeController::class)->middleware('throttle:auth-code');
+Route::post('/auth/token', TokenController::class)->middleware('throttle:auth-token');

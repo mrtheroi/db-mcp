@@ -1,6 +1,6 @@
 # dbMcp — Private Memory MCP Server
 
-Version **0.10.0** · [Changelog](CHANGELOG.md)
+Version **0.11.0** · [Changelog](CHANGELOG.md)
 
 A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
@@ -42,6 +42,31 @@ curl -sf -H "Authorization: Bearer <token>" \
 | `401` | Missing or invalid token |
 | `422` | `project` missing, not a string, or longer than 255 characters |
 | `429` | Rate limit exceeded |
+
+## Terminal login
+
+The `memry` CLI logs in without a browser: request a one-time code by email, then exchange it for a Sanctum token. Signup is open: an unknown email creates the user on its first successful login.
+
+```bash
+curl -s -X POST https://<your-host>/api/auth/code \
+  -H "Content-Type: application/json" -d '{"email":"ada@example.com"}'
+# 202 {"message":"If the email is valid, a login code has been sent."}
+
+curl -s -X POST https://<your-host>/api/auth/token \
+  -H "Content-Type: application/json" -d '{"email":"ada@example.com","code":"042917"}'
+# 200 {"token":"1|..."}
+```
+
+The email is trimmed and lowercased. The code has 6 digits, expires in 10 minutes, works once, and is replaced by any newer code for the same email. Only its HMAC-SHA256 hash is stored. The token is named `memry-cli` and works for `/mcp/memory` and `/api/context`.
+
+| Endpoint | Status | When |
+| --- | --- | --- |
+| `POST /api/auth/code` | `202` | Always for a valid email (same answer whether or not the user exists) |
+| | `422` | `email` missing, not a string, not an email, or longer than 255 characters |
+| | `429` | More than 3 requests per 10 minutes for the email, or 10 per hour from the IP |
+| `POST /api/auth/token` | `200` | `{"token": "..."}` |
+| | `422` | Validation errors, or `Invalid or expired code.` (wrong, expired, used or superseded code; the 5th wrong attempt burns the code) |
+| | `429` | More than 20 requests per minute from the IP |
 
 ## Claude Code SessionStart hook
 
@@ -112,6 +137,7 @@ claude mcp add --transport http memory https://<your-host>/mcp/memory \
 | --- | --- |
 | `DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` | Postgres connection |
 | `API_VERSION` | Overrides the version in `config/api.php` (optional) |
+| `MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS` | Mail transport used to send login codes |
 
 ## Tests
 
@@ -137,7 +163,12 @@ app/
 │       └── RevokeMemoryTokens.php         # memory:revoke — revokes every token of a user
 ├── Http/
 │   └── Controllers/
+│       ├── Auth/
+│       │   ├── LoginCodeController.php    # POST /api/auth/code — emails a one-time login code
+│       │   └── TokenController.php        # POST /api/auth/token — exchanges the code for a memry-cli token
 │       └── ContextController.php          # GET /api/context — plain-text project context
+├── Mail/
+│   └── LoginCodeMail.php                  # Plain-text mail with the login code
 ├── Mcp/
 │   ├── Servers/
 │   │   └── MemoryServer.php               # Server name, instructions and registered tools
@@ -165,9 +196,10 @@ app/
 │           ├── ObservationRecord.php          # Eloquent model for observations
 │           └── UserPromptRecord.php           # Eloquent model for user_prompts
 ├── Models/
+│   ├── LoginCode.php                      # Hashed one-time code: issue, lookup, attempts, consume
 │   └── User.php                           # User with HasApiTokens
 └── Providers/
-    └── AppServiceProvider.php             # Binds ports to their adapters
+    └── AppServiceProvider.php             # Binds ports to their adapters; mcp, auth-code and auth-token rate limiters
 config/
 └── api.php                                # Server version
 hooks/
@@ -175,7 +207,7 @@ hooks/
     └── session-start.sh                   # SessionStart hook: prints the project context via /api/context
 routes/
 ├── ai.php                                 # /mcp/memory route with auth:sanctum
-└── api.php                                # /api/context route with auth:sanctum + throttle:mcp
+└── api.php                                # /api/context (auth:sanctum + throttle:mcp) and /api/auth/{code,token} (throttled)
 ```
 
 ## Security
@@ -187,6 +219,7 @@ routes/
 - A leaked token is revoked with `php artisan memory:revoke <email>`.
 - Each user is limited to 60 requests per minute; beyond that the server returns 429.
 - Every tool validates its input on the server, including maximum lengths (255 characters for identifiers, 20,000 for content).
+- Login codes are stored only as HMAC-SHA256 hashes, expire after 10 minutes, work once, and are burned after 5 wrong attempts; `/api/auth/code` answers the same whether or not the email has an account.
 
 ## Contributing
 
