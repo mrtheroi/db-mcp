@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="art/memry-logo.png" alt="memry" width="400">
+</p>
+
 # memry-server — Private Memory MCP Server
 
 Version **0.15.2** · [Changelog](CHANGELOG.md)
