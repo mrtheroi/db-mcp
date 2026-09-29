@@ -33,6 +33,7 @@ class LoginCodeMail extends Mailable
     public function content(): Content
     {
         return new Content(
+            view: 'mail.login-code-html',
             text: 'mail.login-code',
         );
     }
