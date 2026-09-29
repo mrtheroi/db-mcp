@@ -23,4 +23,4 @@ Local setup, tests, configuration, deployment and the rest of the developer refe
 
 ## License
 
-MIT, as declared in `composer.json`.
+memry-server is released under the [MIT license](LICENSE).
