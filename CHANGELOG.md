@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.3] - 2026-09-29
+
+### Removed
+
+- **`GET /api/user`**: the unused Laravel scaffold route is gone, so the API no longer returns the raw user model to any token holder
+  - The endpoint now answers 404; no client (memry-cli, hooks, MCP tools) called it
+
+---
+
 ## [0.15.2] - 2026-09-29
 
 ### Changed
