@@ -10,7 +10,7 @@
 <body style="margin:0; padding:0; background-color:#f3f4f6;">
     {{-- Hidden inbox preview text; the padding keeps the code from showing after it. --}}
     <div style="display:none; max-height:0; max-width:0; overflow:hidden; opacity:0; mso-hide:all; font-size:1px; line-height:1px; color:#f3f4f6;">
-        Your memry login code expires in 10 minutes.{!! str_repeat('&#847;&zwnj;&nbsp;', 60) !!}
+        Your memry login code expires in {{ \App\Models\LoginCode::TTL_MINUTES }} minutes.{!! str_repeat('&#847;&zwnj;&nbsp;', 60) !!}
     </div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#f3f4f6" style="background-color:#f3f4f6;">
         <tr>
@@ -37,7 +37,7 @@
                     </tr>
                     <tr>
                         <td align="center" bgcolor="#ffffff" style="padding:0 32px 32px; background-color:#ffffff; border-radius:0 0 12px 12px; font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; font-size:14px; line-height:22px; color:#6b7280;">
-                            It expires in 10 minutes.<br>
+                            It expires in {{ \App\Models\LoginCode::TTL_MINUTES }} minutes.<br>
                             If you did not request it, you can ignore this email.
                         </td>
                     </tr>

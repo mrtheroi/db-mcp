@@ -12,6 +12,8 @@ class LoginCode extends Model
 {
     use Prunable;
 
+    public const TTL_MINUTES = 5;
+
     private const MAX_ATTEMPTS = 5;
 
     /**
@@ -26,7 +28,7 @@ class LoginCode extends Model
         self::create([
             'email' => $email,
             'code_hash' => self::hash($code),
-            'expires_at' => now()->addMinutes(10),
+            'expires_at' => now()->addMinutes(self::TTL_MINUTES),
         ]);
 
         return $code;
@@ -59,7 +61,7 @@ class LoginCode extends Model
     }
 
     /**
-     * Codes expired more than a day ago. Every code expires 10 minutes after it is issued,
+     * Codes expired more than a day ago. Every code expires TTL_MINUTES minutes after it is issued,
      * so consumed and burned codes are covered too; the extra day keeps recent rows for debugging.
      *
      * @return Builder<self>

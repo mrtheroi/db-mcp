@@ -1,6 +1,6 @@
 # dbMcp — Private Memory MCP Server
 
-Version **0.15.0** · [Changelog](CHANGELOG.md)
+Version **0.15.1** · [Changelog](CHANGELOG.md)
 
 A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
@@ -60,7 +60,7 @@ curl -s -X DELETE https://<your-host>/api/auth/token -H "Authorization: Bearer <
 # 204 (only this token is revoked)
 ```
 
-The email is trimmed and lowercased. The code has 6 digits, expires in 10 minutes, works once, and is replaced by any newer code for the same email. Only its HMAC-SHA256 hash is stored. The token is named `memry-cli` and works for `/mcp/memory` and `/api/context`.
+The email is trimmed and lowercased. The code has 6 digits, expires in 5 minutes, works once, and is replaced by any newer code for the same email. Only its HMAC-SHA256 hash is stored. The token is named `memry-cli` and works for `/mcp/memory` and `/api/context`.
 
 | Endpoint | Status | When |
 | --- | --- | --- |
@@ -235,7 +235,7 @@ routes/
 - A leaked token is revoked with `php artisan memory:revoke <email>`; a client can revoke its own token with `DELETE /api/auth/token`.
 - Each user is limited to 60 requests per minute; beyond that the server returns 429.
 - Every tool validates its input on the server, including maximum lengths (255 characters for identifiers, 20,000 for content).
-- Login codes are stored only as HMAC-SHA256 hashes, expire after 10 minutes, work once, are burned after 5 wrong attempts, and are deleted a day after they expire; `/api/auth/code` answers the same whether or not the email has an account.
+- Login codes are stored only as HMAC-SHA256 hashes, expire after 5 minutes, work once, are burned after 5 wrong attempts, and are deleted a day after they expire; `/api/auth/code` answers the same whether or not the email has an account.
 
 ## Contributing
 

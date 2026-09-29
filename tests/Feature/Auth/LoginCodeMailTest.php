@@ -15,14 +15,14 @@ it('shows the memry logo from an absolute url in the html part', function () {
 
 it('tells when the code expires and what to do if it was not requested in the html part', function () {
     (new LoginCodeMail('482913'))
-        ->assertSeeInHtml('It expires in 10 minutes.')
+        ->assertSeeInHtml('It expires in 5 minutes.')
         ->assertSeeInHtml('If you did not request it, you can ignore this email.');
 });
 
 it('opens the html part with a preheader that keeps the code out of inbox previews', function () {
     $html = (new LoginCodeMail('482913'))->render();
 
-    $preheader = 'Your memry login code expires in 10 minutes.';
+    $preheader = 'Your memry login code expires in 5 minutes.';
 
     expect($html)->toContain($preheader)
         ->and(strpos($html, $preheader))->toBeLessThan(strpos($html, '482913'));
@@ -31,7 +31,7 @@ it('opens the html part with a preheader that keeps the code out of inbox previe
 it('keeps the plain text part with the code and the expiry', function () {
     (new LoginCodeMail('482913'))
         ->assertSeeInText('Your memry login code is: 482913')
-        ->assertSeeInText('It expires in 10 minutes. If you did not request it, you can ignore this email.')
+        ->assertSeeInText('It expires in 5 minutes. If you did not request it, you can ignore this email.')
         ->assertDontSeeInText('<');
 });
 
