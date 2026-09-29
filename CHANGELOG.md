@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.14.0] - 2026-09-29
+
+### Added
+
+- **Login code pruning**: a daily scheduled `model:prune` deletes login codes that expired more than a day ago
+  - Every code expires 10 minutes after it is issued, so used and burned codes are deleted too
+  - Codes are kept for one day after they expire, for debugging
+  - Needs the Laravel scheduler running (on Laravel Cloud, enable it on the App compute cluster)
+
+---
+
 ## [0.13.1] - 2026-09-29
 
 ### Fixed

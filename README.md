@@ -1,6 +1,6 @@
 # dbMcp — Private Memory MCP Server
 
-Version **0.13.1** · [Changelog](CHANGELOG.md)
+Version **0.14.0** · [Changelog](CHANGELOG.md)
 
 A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
@@ -135,6 +135,8 @@ The commands trim and lowercase the email, like the login endpoints, so `You@Exa
 
 `memory:merge-projects` is non-interactive and runs in a single transaction. It keeps the original timestamps, so moved memories keep their place in the context. When the same user has the same `topic_key` in both projects, nothing is deleted: the rows are moved and the number of collisions is reported so you can resolve them.
 
+Expired login codes are deleted by a daily `model:prune` job, so the scheduler must run: on Laravel Cloud, enable the scheduler on the App compute cluster; elsewhere, run `php artisan schedule:work` or a cron entry calling `php artisan schedule:run` every minute.
+
 Connect Claude Code:
 
 ```bash
@@ -233,7 +235,7 @@ routes/
 - A leaked token is revoked with `php artisan memory:revoke <email>`; a client can revoke its own token with `DELETE /api/auth/token`.
 - Each user is limited to 60 requests per minute; beyond that the server returns 429.
 - Every tool validates its input on the server, including maximum lengths (255 characters for identifiers, 20,000 for content).
-- Login codes are stored only as HMAC-SHA256 hashes, expire after 10 minutes, work once, and are burned after 5 wrong attempts; `/api/auth/code` answers the same whether or not the email has an account.
+- Login codes are stored only as HMAC-SHA256 hashes, expire after 10 minutes, work once, are burned after 5 wrong attempts, and are deleted a day after they expire; `/api/auth/code` answers the same whether or not the email has an account.
 
 ## Contributing
 
