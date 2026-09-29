@@ -12,6 +12,6 @@ return [
     |
     */
 
-    'version' => env('API_VERSION', '0.15.2'),
+    'version' => env('API_VERSION', '0.15.3'),
 
 ];
