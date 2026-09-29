@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.0] - 2026-09-29
+
+### Added
+
+- **Branded login email**: the login code email now has an HTML part with the memry logo, sent next to the existing plain-text part
+  - The code sits in its own large, letter-spaced monospace block, so it is easy to read and copy
+  - A hidden preheader ("Your memry login code expires in 10 minutes.") keeps the code out of inbox and lock-screen previews
+  - The logo is served from `public/images/memry-logo-horizontal.png` through `asset()`, so it points at the host that received `POST /api/auth/code`
+
+---
+
 ## [0.14.0] - 2026-09-29
 
 ### Added
