@@ -1,6 +1,6 @@
 # dbMcp — Private Memory MCP Server
 
-Version **0.12.0** · [Changelog](CHANGELOG.md)
+Version **0.13.0** · [Changelog](CHANGELOG.md)
 
 A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
@@ -55,6 +55,9 @@ curl -s -X POST https://<your-host>/api/auth/code \
 curl -s -X POST https://<your-host>/api/auth/token \
   -H "Content-Type: application/json" -d '{"email":"ada@example.com","code":"042917"}'
 # 200 {"token":"1|..."}
+
+curl -s -X DELETE https://<your-host>/api/auth/token -H "Authorization: Bearer <token>"
+# 204 (only this token is revoked)
 ```
 
 The email is trimmed and lowercased. The code has 6 digits, expires in 10 minutes, works once, and is replaced by any newer code for the same email. Only its HMAC-SHA256 hash is stored. The token is named `memry-cli` and works for `/mcp/memory` and `/api/context`.
@@ -67,6 +70,8 @@ The email is trimmed and lowercased. The code has 6 digits, expires in 10 minute
 | `POST /api/auth/token` | `200` | `{"token": "..."}` |
 | | `422` | Validation errors, or `Invalid or expired code.` (wrong, expired, used or superseded code; the 5th wrong attempt burns the code) |
 | | `429` | More than 20 requests per minute from the IP |
+| `DELETE /api/auth/token` | `204` | The token used for the request is revoked; the user's other tokens stay valid |
+| | `401` | Missing, invalid or already revoked token |
 
 ## Claude Code SessionStart hook
 
@@ -170,6 +175,7 @@ app/
 │   └── Controllers/
 │       ├── Auth/
 │       │   ├── LoginCodeController.php    # POST /api/auth/code — emails a one-time login code
+│       │   ├── RevokeTokenController.php  # DELETE /api/auth/token — revokes the token used for the request
 │       │   └── TokenController.php        # POST /api/auth/token — exchanges the code for a memry-cli token
 │       └── ContextController.php          # GET /api/context — plain-text project context
 ├── Mail/
@@ -222,7 +228,7 @@ routes/
 - `user_id` comes from the token, never from tool arguments; every query is scoped to it.
 - `get-memory` answers `Memory not found.` for another user's id, the same as for a missing id, so it does not reveal that the memory exists.
 - Only the SHA-256 hash of each token is stored.
-- A leaked token is revoked with `php artisan memory:revoke <email>`.
+- A leaked token is revoked with `php artisan memory:revoke <email>`; a client can revoke its own token with `DELETE /api/auth/token`.
 - Each user is limited to 60 requests per minute; beyond that the server returns 429.
 - Every tool validates its input on the server, including maximum lengths (255 characters for identifiers, 20,000 for content).
 - Login codes are stored only as HMAC-SHA256 hashes, expire after 10 minutes, work once, and are burned after 5 wrong attempts; `/api/auth/code` answers the same whether or not the email has an account.
