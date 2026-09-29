@@ -53,16 +53,17 @@ final class EloquentMemoryRepository implements MemoryRepository
             ->all();
     }
 
-    public function latestSessionSummary(int $userId, string $project): ?Observation
+    public function recentSessionSummaries(int $userId, string $project, int $limit): array
     {
-        $record = ObservationRecord::where('user_id', $userId)
+        return ObservationRecord::where('user_id', $userId)
             ->where('project', $project)
             ->where('type', 'session_summary')
             ->latest('updated_at')
             ->latest('id')
-            ->first();
-
-        return $record ? $this->toDomain($record) : null;
+            ->limit($limit)
+            ->get()
+            ->map(fn (ObservationRecord $record) => $this->toDomain($record))
+            ->all();
     }
 
     public function withTopicKey(int $userId, string $project, int $limit): array
@@ -93,6 +94,26 @@ final class EloquentMemoryRepository implements MemoryRepository
             ->all();
     }
 
+    public function countTopicKeyCollisions(string $from, string $to, ?int $userId): int
+    {
+        return ObservationRecord::where('project', $from)
+            ->when($userId, fn ($builder) => $builder->where('user_id', $userId))
+            ->whereNotNull('topic_key')
+            ->whereExists(fn ($query) => $query->from('observations as target')
+                ->whereColumn('target.user_id', 'observations.user_id')
+                ->whereColumn('target.topic_key', 'observations.topic_key')
+                ->where('target.project', $to))
+            ->count();
+    }
+
+    public function moveToProject(string $from, string $to, ?int $userId): int
+    {
+        return ObservationRecord::where('project', $from)
+            ->when($userId, fn ($builder) => $builder->where('user_id', $userId))
+            ->toBase()
+            ->update(['project' => $to]);
+    }
+
     private function toDomain(ObservationRecord $record): Observation
     {
         return new Observation(
@@ -105,6 +126,7 @@ final class EloquentMemoryRepository implements MemoryRepository
             scope: $record->scope,
             topicKey: $record->topic_key,
             id: $record->id,
+            updatedAt: $record->updated_at?->toDateTimeImmutable(),
         );
     }
 }

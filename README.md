@@ -1,6 +1,6 @@
 # dbMcp — Private Memory MCP Server
 
-Version **0.11.1** · [Changelog](CHANGELOG.md)
+Version **0.12.0** · [Changelog](CHANGELOG.md)
 
 A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
@@ -22,8 +22,8 @@ Project names are normalized on write and on query (trimmed, lowercased, repeate
 | --- | --- | --- |
 | `save-memory` | `session_id`*, `type`*, `title`*, `content`*, `project`, `topic_key` | Saves an observation. The same `topic_key` in the same project (under any spelling) updates it instead of duplicating it. |
 | `search-memory` | `query`*, `limit` (1–20, default 10), `project` | Full-text search (title weighs more than content), ordered by relevance. Pass `project` to search only that project; omit it to search all projects. |
-| `session-summary` | `session_id`*, `project`*, `content`* | Saves the session summary as an observation of type `session_summary`. |
-| `get-context` | `project`* | Returns a bounded context of the project: the latest session summary in full, up to 20 topic-key memories with a 300-character preview, and up to 10 other recent memories by title. |
+| `session-summary` | `session_id`*, `project`*, `content`*, `repo` | Saves the session summary as an observation of type `session_summary`. Pass `repo` when the project spans several repositories; the title becomes `Session summary: {project} ({repo})`. |
+| `get-context` | `project`* | Returns a bounded context of the project: the last 3 session summaries (the newest in full, the other two with their date and a 300-character preview), up to 20 topic-key memories with a 300-character preview, and up to 10 other recent memories by title. |
 | `get-memory` | `id`* | Returns the full content of one of the user's own memories. An id that does not exist or belongs to another user returns `Memory not found.` |
 | `save-prompt` | `session_id`*, `content`*, `project` | Stores the user's prompt verbatim. |
 
@@ -122,7 +122,11 @@ php artisan migrate
 php artisan memory:token you@example.com   # prints a token once
 php artisan memory:token you@example.com --create   # non-interactive consoles (e.g. Laravel Cloud)
 php artisan memory:revoke you@example.com           # revokes every token of the user
+php artisan memory:merge-projects dbmcp memry        # moves every user's memories and prompts of dbmcp into memry
+php artisan memory:merge-projects dbmcp memry --email=you@example.com   # only that user's rows
 ```
+
+`memory:merge-projects` is non-interactive and runs in a single transaction. It keeps the original timestamps, so moved memories keep their place in the context. When the same user has the same `topic_key` in both projects, nothing is deleted: the rows are moved and the number of collisions is reported so you can resolve them.
 
 Connect Claude Code:
 
@@ -160,6 +164,7 @@ app/
 ├── Console/
 │   └── Commands/
 │       ├── IssueMemoryToken.php           # memory:token — issues a Sanctum token, creates the user after confirmation
+│       ├── MergeMemoryProjects.php        # memory:merge-projects — moves memories and prompts between projects
 │       └── RevokeMemoryTokens.php         # memory:revoke — revokes every token of a user
 ├── Http/
 │   └── Controllers/
@@ -182,12 +187,13 @@ app/
 ├── Memory/
 │   ├── Application/
 │   │   ├── BuildProjectContext.php        # Use case: layered project context text (tool + HTTP)
+│   │   ├── MergeProjects.php              # Use case: move a project's rows into another, counting topic_key collisions
 │   │   └── SaveObservation.php            # Use case: upsert by topic_key
 │   ├── Domain/
-│   │   ├── MemoryRepository.php           # Port: save, find, findByTopicKey, search, latestSessionSummary, withTopicKey, recentWithoutTopicKey
+│   │   ├── MemoryRepository.php           # Port: save, find, findByTopicKey, search, recentSessionSummaries, withTopicKey, recentWithoutTopicKey, countTopicKeyCollisions, moveToProject
 │   │   ├── Observation.php                # Immutable memory entity
 │   │   ├── ProjectName.php                # Normalizes project names
-│   │   ├── PromptRepository.php           # Port: save prompts
+│   │   ├── PromptRepository.php           # Port: save and move prompts
 │   │   └── UserPrompt.php                 # Immutable prompt entity
 │   └── Infrastructure/
 │       └── Persistence/
