@@ -22,7 +22,7 @@ body=$(curl -sf --max-time 3 -H @- "$url/api/context?project=$encoded" <<<"Autho
 
 cat <<TXT
 ## memry memory (project: $project)
-memry is available through the \`db-memory\` MCP tools, alongside Engram.
+memry is available through the \`memry\` MCP tools.
 - Use get-memory with an id to read a memory from the context below in full, and search-memory to find older ones.
 - Save decisions, bug fixes and discoveries with save-memory (project "$project", with a topic_key for evolving topics).
 - Before ending the session, save a summary with session-summary (project "$project").

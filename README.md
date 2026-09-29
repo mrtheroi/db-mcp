@@ -1,6 +1,6 @@
-# dbMcp — Private Memory MCP Server
+# memry-server — Private Memory MCP Server
 
-Version **0.15.1** · [Changelog](CHANGELOG.md)
+Version **0.15.2** · [Changelog](CHANGELOG.md)
 
 A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
@@ -75,7 +75,7 @@ The email is trimmed and lowercased. The code has 6 digits, expires in 5 minutes
 
 ## Claude Code SessionStart hook
 
-`hooks/claude-code/session-start.sh` loads the project context into every Claude Code session through `GET /api/context`. The project is the basename of the git top-level of the session `cwd` (or of `cwd` itself outside git); the server normalizes it. It prints a short protocol block for the `db-memory` tools (additive to Engram) followed by the context. The token is passed to curl through stdin, so it never appears in the process list. If the config is missing or incomplete, the request fails or it takes longer than 3 seconds, it prints nothing and exits `0`, so it never blocks a session.
+`hooks/claude-code/session-start.sh` loads the project context into every Claude Code session through `GET /api/context`. The project is the basename of the git top-level of the session `cwd` (or of `cwd` itself outside git); the server normalizes it. It prints a short protocol block for the `memry` MCP tools followed by the context. The token is passed to curl through stdin, so it never appears in the process list. If the config is missing or incomplete, the request fails or it takes longer than 3 seconds, it prints nothing and exits `0`, so it never blocks a session.
 
 1. Create `~/.config/memry/config.json` (or point `MEMRY_CONFIG` to another path) and restrict it to your user:
 
@@ -98,7 +98,7 @@ The email is trimmed and lowercased. The code has 6 digits, expires in 5 minutes
            "hooks": [
              {
                "type": "command",
-               "command": "/path/to/dbMcp/hooks/claude-code/session-start.sh",
+               "command": "/path/to/memry-server/hooks/claude-code/session-start.sh",
                "timeout": 10
              }
            ]
@@ -140,7 +140,7 @@ Expired login codes are deleted by a daily `model:prune` job, so the scheduler m
 Connect Claude Code:
 
 ```bash
-claude mcp add --transport http memory https://<your-host>/mcp/memory \
+claude mcp add --transport http memry https://<your-host>/mcp/memory \
   --header "Authorization: Bearer <token>"
 ```
 
