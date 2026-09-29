@@ -9,6 +9,7 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 #[Signature('memory:merge-projects {from : Project whose memories are moved} {to : Project that receives them} {--email= : Only move the rows of this user}')]
 #[Description('Move the observations and prompts of one project into another')]
@@ -38,6 +39,7 @@ class MergeMemoryProjects extends Command
         $userId = null;
 
         if ($email !== null) {
+            $email = Str::lower(trim($email));
             $user = User::where('email', $email)->first();
 
             if ($user === null) {

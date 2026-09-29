@@ -41,3 +41,21 @@ test('it creates the user without asking when the create option is given', funct
 
     expect(User::where('email', 'cloud@example.com')->first()->tokens()->count())->toBe(1);
 });
+
+test('it finds the existing user when the email differs in case or spacing', function () {
+    $user = User::factory()->create(['email' => 'me@example.com']);
+
+    $this->artisan('memory:token', ['email' => ' Me@Example.COM '])
+        ->expectsOutputToContain('Token:')
+        ->assertSuccessful();
+
+    expect($user->tokens()->count())->toBe(1);
+    $this->assertDatabaseCount('users', 1);
+});
+
+test('it stores the email of a created user trimmed and lowercased', function () {
+    $this->artisan('memory:token', ['email' => ' Cloud@Example.COM ', '--create' => true])
+        ->assertSuccessful();
+
+    expect(User::sole()->email)->toBe('cloud@example.com');
+});

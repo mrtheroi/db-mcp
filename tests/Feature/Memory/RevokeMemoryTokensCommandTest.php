@@ -32,3 +32,14 @@ test('it keeps the tokens of other users', function () {
 
     expect($other->tokens()->count())->toBe(1);
 });
+
+test('it finds the user when the email differs in case or spacing', function () {
+    $user = User::factory()->create(['email' => 'me@example.com']);
+    $user->createToken('laptop');
+
+    $this->artisan('memory:revoke', ['email' => ' Me@Example.COM '])
+        ->expectsOutputToContain('Revoked 1 tokens.')
+        ->assertSuccessful();
+
+    expect($user->tokens()->count())->toBe(0);
+});
