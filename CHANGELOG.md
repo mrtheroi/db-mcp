@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.16.0] - 2026-09-29
+
+### Added
+
+- **Account deletion**: `DELETE /api/account` deletes the authenticated user and everything tied to them, and answers 204
+  - The body must repeat the account email (`{"email": "..."}`, trimmed and lowercased like the login endpoints); any other value answers 422 and deletes nothing
+  - Memories, prompts, every token of the user (not only the current one), login codes, password reset tokens and sessions are removed in one database transaction
+  - It shares the per-user rate limit of `/mcp/memory` and `/api/context` (60 requests per minute)
+
+---
+
 ## [0.15.3] - 2026-09-29
 
 ### Removed

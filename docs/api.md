@@ -62,3 +62,21 @@ The email is trimmed and lowercased. The code has 6 digits, expires in 5 minutes
 | | `429` | Rate limit exceeded for the IP (see [Security](security.md#rate-limits)) |
 | `DELETE /api/auth/token` | `204` | The token used for the request is revoked; the user's other tokens stay valid |
 | | `401` | Missing, invalid or already revoked token |
+
+## Account deletion
+
+`DELETE /api/account` deletes the authenticated user and all of their data: memories, prompts, every token (not only the one used for the request) and pending login codes. The body must repeat the account email, so a stray call cannot delete the account. The email is trimmed and lowercased, as in the login endpoints. It shares the rate limit of `/mcp/memory` and `/api/context`.
+
+```bash
+curl -s -X DELETE https://<your-host>/api/account \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" -d '{"email":"ada@example.com"}'
+# 204
+```
+
+| Status | When |
+| --- | --- |
+| `204` | The account and all of its data are deleted |
+| `401` | Missing or invalid token |
+| `422` | `email` missing, not a string, or not the email of the account |
+| `429` | Rate limit exceeded |
