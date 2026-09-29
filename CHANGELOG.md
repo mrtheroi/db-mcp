@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Renamed to memry-server**: the GitHub repository moved from `mrtheroi/db-mcp` to `mrtheroi/memry-server`, and the docs follow the new name
   - The README title and the example hook path now say `memry-server`, and the Claude Code MCP server is registered as `memry` (matching memry-cli)
-  - The legacy `hooks/claude-code/session-start.sh` protocol block now points at the `memry` MCP tools and no longer assumes Engram is installed
+  - The legacy `hooks/claude-code/session-start.sh` protocol block now points at the `memry` MCP tools
   - `package.json` and `package-lock.json` are named `memry-server`
 
 ---
@@ -119,7 +119,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`hooks/claude-code/session-start.sh`**: a Claude Code `SessionStart` hook that loads the memry context of the current project into the session through `GET /api/context`
   - Reads `url` and `token` from `${MEMRY_CONFIG:-~/.config/memry/config.json}`; the token is only sent in the `Authorization` header, passed to curl through stdin (`-H @-`) so it never appears in the process list
   - The project is the basename of the git top-level of the session `cwd` (the basename of `cwd` outside git, the working directory when `cwd` is empty), URL-encoded and normalized by the server
-  - Prints a short protocol block for the `db-memory` MCP tools (additive to Engram) followed by the endpoint body
+  - Prints a short protocol block for the `db-memory` MCP tools followed by the endpoint body
   - Fails silently: a missing or incomplete config, a curl error, an HTTP error or the 3-second timeout print nothing, and the script always exits `0`
 
 ---
@@ -153,7 +153,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Project names are normalized**: every `project` is trimmed, lowercased, and has repeated `--` collapsed to `-` and `__` to `_` (the same rule as Engram's `CanonicalizeProjectName`), so `dbmcp`, `dbMcp` and ` DbMcp ` are the same project
+- **Project names are normalized**: every `project` is trimmed, lowercased, and has repeated `--` collapsed to `-` and `__` to `_`, so `dbmcp`, `dbMcp` and ` DbMcp ` are the same project
   - Applied on write: `save-memory`, `session-summary` and `save-prompt` store the normalized name; an empty or whitespace-only `project` is stored as no project
   - Applied on query: `get-context` and the `project` filter of `search-memory` normalize the argument, so `DbMcp` finds memories saved as `dbmcp`
   - The `topic_key` upsert matches across spellings: saving with `project: DbMcp` updates the existing `dbmcp` memory instead of creating a new one
