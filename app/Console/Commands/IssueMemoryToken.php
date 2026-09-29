@@ -17,7 +17,7 @@ class IssueMemoryToken extends Command
      */
     public function handle(): int
     {
-        $email = $this->argument('email');
+        $email = Str::lower(trim($this->argument('email')));
         $user = User::where('email', $email)->first();
 
         if ($user === null && ($this->option('create') || $this->confirm("User {$email} does not exist. Create it?"))) {

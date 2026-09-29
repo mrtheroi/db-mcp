@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
+use Illuminate\Support\Str;
 
 #[Signature('memory:revoke {email : Email of the user whose tokens are revoked}')]
 #[Description('Revoke every Sanctum token of a user, disconnecting all their agents')]
@@ -16,7 +17,7 @@ class RevokeMemoryTokens extends Command
      */
     public function handle(): int
     {
-        $email = $this->argument('email');
+        $email = Str::lower(trim($this->argument('email')));
         $user = User::where('email', $email)->first();
 
         if ($user === null) {

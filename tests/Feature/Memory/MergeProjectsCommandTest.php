@@ -107,6 +107,18 @@ test('it only moves the rows of the given user when an email is passed', functio
     $this->assertDatabaseHas('user_prompts', ['content' => 'Other prompt', 'project' => 'dbmcp']);
 });
 
+test('it finds the user when the email differs in case or spacing', function () {
+    $user = User::factory()->create(['email' => 'me@example.com']);
+
+    remember($user, 'Own decision', 'Content');
+
+    $this->artisan('memory:merge-projects', ['from' => 'dbmcp', 'to' => 'memry', '--email' => ' Me@Example.COM '])
+        ->expectsOutputToContain('Moved 1 observations and 0 prompts from dbmcp to memry.')
+        ->assertSuccessful();
+
+    $this->assertDatabaseHas('observations', ['title' => 'Own decision', 'project' => 'memry']);
+});
+
 test('it fails without moving anything when the email is unknown', function () {
     $user = User::factory()->create();
 

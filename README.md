@@ -1,6 +1,6 @@
 # dbMcp — Private Memory MCP Server
 
-Version **0.13.0** · [Changelog](CHANGELOG.md)
+Version **0.13.1** · [Changelog](CHANGELOG.md)
 
 A private, remote memory server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects through MCP tools served over HTTP. Think [Engram](https://github.com/Gentleman-Programming/engram), but hosted and multi-user.
 
@@ -130,6 +130,8 @@ php artisan memory:revoke you@example.com           # revokes every token of the
 php artisan memory:merge-projects dbmcp memry        # moves every user's memories and prompts of dbmcp into memry
 php artisan memory:merge-projects dbmcp memry --email=you@example.com   # only that user's rows
 ```
+
+The commands trim and lowercase the email, like the login endpoints, so `You@Example.com` finds `you@example.com`.
 
 `memory:merge-projects` is non-interactive and runs in a single transaction. It keeps the original timestamps, so moved memories keep their place in the context. When the same user has the same `topic_key` in both projects, nothing is deleted: the rows are moved and the number of collisions is reported so you can resolve them.
 
