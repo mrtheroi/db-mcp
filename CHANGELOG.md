@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.13.0] - 2026-09-29
+
+### Added
+
+- **Token revocation endpoint**: `DELETE /api/auth/token` with a Sanctum Bearer token revokes only the token used for the request, so the `memry` CLI can log out from the terminal
+  - Answers `204` with no body; the other tokens of the same user stay valid
+  - Without a token, or with an invalid or already revoked token, answers `401` with `{"message": "Unauthenticated."}`
+
+---
+
 ## [0.12.0] - 2026-09-28
 
 ### Added
