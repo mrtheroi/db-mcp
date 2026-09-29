@@ -5,6 +5,28 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-09-28
+
+### Added
+
+- **`repo` argument for `session-summary`**: an optional string of at most 255 characters (trimmed, kept as written, not normalized) naming the repository the session worked in, for products that span several repositories
+  - With a `repo`, the summary title becomes `Session summary: {project} ({repo})`; without it (or blank) it stays `Session summary: {project}`
+  - Stored in the title only: no schema change
+- **`memory:merge-projects` command**: `php artisan memory:merge-projects {from} {to} [--email=]` moves the observations and prompts of project `from` into project `to` (both normalized like `project`), for every user or only the user of `--email`
+  - Non-interactive: no confirmation prompt; prints how many observations and prompts were moved and how many `topic_key` collisions (same user and `topic_key` in both projects) are left to resolve
+  - Collisions are never deleted: both rows end up in `to` and must be resolved by hand
+  - Moved rows keep their timestamps, so `get-context` keeps its order, and stay searchable under `to` (`search_vector` only covers title and content)
+  - Fails without moving anything when `from` and `to` are the same after normalization, when a name is blank, or when the `--email` user does not exist
+  - Runs in a single transaction
+
+### Changed
+
+- **`get-context` shows `## Recent sessions` instead of `## Latest session`**, so parallel sessions in different repositories of the same project are all visible (also in `GET /api/context`)
+  - The last 3 `session_summary` memories of the project, most recently updated first: the newest in full, the other two as one line each with their `updated_at` date (`Y-m-d H:i`, UTC) and a 300-character preview of their content
+  - Every other layer and bound is unchanged
+
+---
+
 ## [0.11.1] - 2026-09-28
 
 ### Fixed

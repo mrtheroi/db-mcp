@@ -22,7 +22,7 @@ test('it returns the get-context text of the project as plain text', function ()
 
     $response->assertOk()
         ->assertHeader('Content-Type', 'text/plain; charset=UTF-8')
-        ->assertSee(['## Latest session', '## Project knowledge', '## Recent memories']);
+        ->assertSee(['## Recent sessions', '## Project knowledge', '## Recent memories']);
     expect($response->getContent())->toBe(app(BuildProjectContext::class)($user->id, 'dbmcp'));
 });
 

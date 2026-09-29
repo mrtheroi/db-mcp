@@ -14,18 +14,28 @@ final class BuildProjectContext
     {
         $project = ProjectName::normalize($project);
 
-        $latestSession = $this->memories->latestSessionSummary($userId, $project);
+        $sessions = $this->memories->recentSessionSummaries($userId, $project, 3);
         $knowledge = $this->memories->withTopicKey($userId, $project, 20);
         $recent = $this->memories->recentWithoutTopicKey($userId, $project, 10);
 
-        if ($latestSession === null && $knowledge === [] && $recent === []) {
+        if ($sessions === [] && $knowledge === [] && $recent === []) {
             return "No context found for project {$project}.";
         }
 
         $sections = [];
 
-        if ($latestSession !== null) {
-            $sections[] = "## Latest session\n#{$latestSession->id} [{$latestSession->type}] {$latestSession->title}\n{$latestSession->content}";
+        if ($sessions !== []) {
+            $newest = array_shift($sessions);
+            $section = "## Recent sessions\n#{$newest->id} [{$newest->type}] {$newest->title}\n{$newest->content}";
+
+            if ($sessions !== []) {
+                $section .= "\n\n".implode("\n", array_map(
+                    fn (Observation $observation) => "- #{$observation->id} [{$observation->type}] {$observation->title} ({$observation->updatedAt?->format('Y-m-d H:i')}): {$this->preview($observation->content)}",
+                    $sessions,
+                ));
+            }
+
+            $sections[] = $section;
         }
 
         if ($knowledge !== []) {

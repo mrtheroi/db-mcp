@@ -2,6 +2,8 @@
 
 namespace App\Memory\Domain;
 
+use DateTimeImmutable;
+
 final readonly class Observation
 {
     public ?string $project;
@@ -16,6 +18,7 @@ final readonly class Observation
         public string $scope,
         public ?string $topicKey,
         public ?int $id = null,
+        public ?DateTimeImmutable $updatedAt = null,
     ) {
         $this->project = ProjectName::normalize($project);
     }

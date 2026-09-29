@@ -15,7 +15,10 @@ interface MemoryRepository
      */
     public function search(int $userId, string $query, int $limit, ?string $project = null): array;
 
-    public function latestSessionSummary(int $userId, string $project): ?Observation;
+    /**
+     * @return list<Observation>
+     */
+    public function recentSessionSummaries(int $userId, string $project, int $limit): array;
 
     /**
      * @return list<Observation>
@@ -26,4 +29,16 @@ interface MemoryRepository
      * @return list<Observation>
      */
     public function recentWithoutTopicKey(int $userId, string $project, int $limit): array;
+
+    /**
+     * Count the observations of a project whose user already has the same
+     * topic key in another project. A null user counts every user.
+     */
+    public function countTopicKeyCollisions(string $from, string $to, ?int $userId): int;
+
+    /**
+     * Move observations to another project, returning how many were moved.
+     * A null user moves the rows of every user.
+     */
+    public function moveToProject(string $from, string $to, ?int $userId): int;
 }

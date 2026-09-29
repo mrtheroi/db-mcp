@@ -59,7 +59,7 @@ test('it finds the context of a project written with a different spelling', func
         ->assertSee('Use Postgres full-text search');
 });
 
-test('it shows only the latest session summary, in full', function () {
+test('it shows the newest session summary in full under recent sessions', function () {
     $user = User::factory()->create();
 
     remember($user, 'Session one', 'Older summary content', type: 'session_summary');
@@ -69,9 +69,33 @@ test('it shows only the latest session summary, in full', function () {
     MemoryServer::actingAs($user)
         ->tool(GetContext::class, ['project' => 'dbmcp'])
         ->assertOk()
-        ->assertSee("## Latest session\n#{$latest->id} [session_summary] Session two\nLatest summary content\nwith a second line")
-        ->assertDontSee('Session one')
-        ->assertDontSee('Older summary content');
+        ->assertSee("## Recent sessions\n#{$latest->id} [session_summary] Session two\nLatest summary content\nwith a second line")
+        ->assertDontSee('## Latest session');
+});
+
+test('it lists the two previous session summaries with their date and a preview, newest first, dropping older ones', function () {
+    $user = User::factory()->create();
+
+    $this->travelTo('2026-09-28 10:00:00');
+    remember($user, 'Session summary: memry (dbMcp)', 'Oldest summary content', project: 'memry', type: 'session_summary');
+    $this->travelTo('2026-09-28 11:00:00');
+    $third = remember($user, 'Session summary: memry (memry-cli)', "Third line one\nline two ".str_repeat('é', 300), project: 'memry', type: 'session_summary');
+    $this->travelTo('2026-09-28 12:30:00');
+    $second = remember($user, 'Session summary: memry (dbMcp)', 'Second summary content', project: 'memry', type: 'session_summary');
+    $this->travelTo('2026-09-28 13:00:00');
+    $newest = remember($user, 'Session summary: memry (memry-cli)', 'Newest summary content', project: 'memry', type: 'session_summary');
+
+    $preview = mb_substr('Third line one line two '.str_repeat('é', 300), 0, 300);
+
+    MemoryServer::actingAs($user)
+        ->tool(GetContext::class, ['project' => 'memry'])
+        ->assertOk()
+        ->assertSee(
+            "## Recent sessions\n#{$newest->id} [session_summary] Session summary: memry (memry-cli)\nNewest summary content\n\n"
+            ."- #{$second->id} [session_summary] Session summary: memry (dbMcp) (2026-09-28 12:30): Second summary content\n"
+            ."- #{$third->id} [session_summary] Session summary: memry (memry-cli) (2026-09-28 11:00): {$preview}…\n\n"
+        )
+        ->assertDontSee('Oldest summary content');
 });
 
 test('it lists topic-key memories under project knowledge with a preview of their content', function () {
@@ -133,7 +157,7 @@ test('it omits empty sections and ends with a hint to read memories in full', fu
         ->tool(GetContext::class, ['project' => 'dbmcp'])
         ->assertOk()
         ->assertSee("## Recent memories\n- #{$memory->id} [decision] Fixed flaky token test\n\nUse get-memory with an id to read a memory in full.")
-        ->assertDontSee('## Latest session')
+        ->assertDontSee('## Recent sessions')
         ->assertDontSee('## Project knowledge');
 });
 
