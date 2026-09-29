@@ -55,7 +55,7 @@ test('it prints the protocol block and the context body using the git top-level 
     expect($result->exitCode())->toBe(0)
         ->and($result->output())->toBe(<<<'TXT'
 ## memry memory (project: MyProject)
-memry is available through the `db-memory` MCP tools, alongside Engram.
+memry is available through the `memry` MCP tools.
 - Use get-memory with an id to read a memory from the context below in full, and search-memory to find older ones.
 - Save decisions, bug fixes and discoveries with save-memory (project "MyProject", with a topic_key for evolving topics).
 - Before ending the session, save a summary with session-summary (project "MyProject").

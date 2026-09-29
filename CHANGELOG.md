@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.2] - 2026-09-29
+
+### Changed
+
+- **Renamed to memry-server**: the GitHub repository moved from `mrtheroi/db-mcp` to `mrtheroi/memry-server`, and the docs follow the new name
+  - The README title and the example hook path now say `memry-server`, and the Claude Code MCP server is registered as `memry` (matching memry-cli)
+  - The legacy `hooks/claude-code/session-start.sh` protocol block now points at the `memry` MCP tools and no longer assumes Engram is installed
+  - `package.json` and `package-lock.json` are named `memry-server`
+
+---
+
 ## [0.15.1] - 2026-09-29
 
 ### Changed
