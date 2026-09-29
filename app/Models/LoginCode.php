@@ -3,11 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Prunable;
 
 #[Fillable(['email', 'code_hash', 'expires_at'])]
 class LoginCode extends Model
 {
+    use Prunable;
+
     private const MAX_ATTEMPTS = 5;
 
     /**
@@ -52,6 +56,17 @@ class LoginCode extends Model
     public function consume(): bool
     {
         return self::whereKey($this->getKey())->whereNull('consumed_at')->update(['consumed_at' => now()]) === 1;
+    }
+
+    /**
+     * Codes expired more than a day ago. Every code expires 10 minutes after it is issued,
+     * so consumed and burned codes are covered too; the extra day keeps recent rows for debugging.
+     *
+     * @return Builder<self>
+     */
+    public function prunable(): Builder
+    {
+        return self::where('expires_at', '<', now()->subDay());
     }
 
     private static function hash(string $code): string
