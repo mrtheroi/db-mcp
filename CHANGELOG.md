@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.15.1] - 2026-09-29
+
+### Changed
+
+- **Shorter login code lifetime**: email login codes now expire 5 minutes after they are issued, down from 10
+  - The lifetime is defined once, in `LoginCode::TTL_MINUTES`, and both the expiry and the email text (HTML body, preheader and plain-text part) read it, so they cannot drift apart
+  - Pruning is unchanged: codes are still deleted a day after they expire
+
+---
+
 ## [0.15.0] - 2026-09-29
 
 ### Added

@@ -100,10 +100,19 @@ test('it burns the code after five wrong attempts', function () {
         ->assertExactJson(['message' => 'Invalid or expired code.']);
 });
 
+test('it accepts a code just before it expires', function () {
+    $code = requestLoginCode('ada@example.com');
+
+    $this->travel(4)->minutes();
+    $this->travel(59)->seconds();
+
+    $this->postJson('/api/auth/token', ['email' => 'ada@example.com', 'code' => $code])->assertOk();
+});
+
 test('it rejects an expired code', function () {
     $code = requestLoginCode('ada@example.com');
 
-    $this->travel(10)->minutes();
+    $this->travel(5)->minutes();
     $this->travel(1)->second();
 
     $this->postJson('/api/auth/token', ['email' => 'ada@example.com', 'code' => $code])
