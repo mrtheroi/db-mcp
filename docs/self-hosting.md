@@ -15,8 +15,16 @@ If the checkout already has a `.env` (for example, a Laravel development setup),
 
 ```bash
 cp docker/community.env.example ~/memry-community.env
-docker compose --env-file ~/memry-community.env build
+alias dc='docker compose --env-file ~/memry-community.env'
+dc build                                              # builds memry-server:local
+dc run --rm --no-deps app key                         # prints an APP_KEY
+# edit ~/memry-community.env: paste APP_KEY, set APP_URL and a strong DB_PASSWORD
+dc run --rm migrate
+dc up -d app scheduler
+curl http://localhost:8000/up                         # 200 when healthy
 ```
+
+Use `dc` in place of `docker compose` in the rest of this guide.
 
 Otherwise, from a checkout of this repository:
 
