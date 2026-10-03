@@ -4,7 +4,7 @@
 
 # memry-server
 
-Version **0.16.0** · [Changelog](CHANGELOG.md)
+Version **0.17.0** · [Changelog](CHANGELOG.md)
 
 This is the server behind memry: a hosted, persistent memory MCP server for AI agents. Agents save and recall knowledge (decisions, bug fixes, conventions, session summaries) across sessions and projects.
 

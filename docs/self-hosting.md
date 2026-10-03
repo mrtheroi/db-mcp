@@ -89,9 +89,10 @@ The image entrypoint accepts these commands (`docker compose run --rm app <comma
 | `scheduler` | `php artisan schedule:work` |
 | `token <email>` | Creates the user if needed and prints a new token |
 | `key` | Prints a new `APP_KEY` |
+| `php`, `sh`, `bash`, `frankenphp` | Run as-is, without `php artisan` (for example `sh` for a shell) |
 | anything else | Passed to `php artisan` (for example `memory:revoke you@example.com`) |
 
-Every command except `key` refuses to start when `APP_KEY` is empty or `DB_CONNECTION` is not `pgsql`.
+Every command except `key` and the raw `php`, `sh`, `bash` and `frankenphp` commands refuses to start when `APP_KEY` is empty or `DB_CONNECTION` is not `pgsql`.
 
 ## Using an existing PostgreSQL
 
@@ -105,7 +106,7 @@ Run migrations after the first install and after every upgrade:
 docker compose run --rm migrate
 ```
 
-Alternatively set `AUTO_MIGRATE=true` so `app` migrates before it starts serving. Migrations take a database lock, so several containers starting at once do not run them twice.
+Alternatively set `AUTO_MIGRATE=true` so `app` migrates before it starts serving. Once the database is initialised, migrations take a database lock, so several containers starting at once do not run them twice. On a brand-new database the cache table that holds that lock is created first, without the lock, so concurrent first migrations can race: for the first deployment, run `docker compose run --rm migrate` once before starting several `app` containers with `AUTO_MIGRATE=true`.
 
 ## Users and tokens
 
@@ -199,7 +200,7 @@ Keep `APP_KEY` stable across restores and upgrades: login codes are signed with 
 
 Pushing a `vX.Y.Z` tag runs `.github/workflows/docker.yml`: it smoke tests the image, then publishes the immutable `X.Y.Z` tag to `ghcr.io/mrtheroi/memry-server`. There are no floating `X.Y` tags. Every tag gets its own run; runs for different tags are neither queued behind each other nor cancelled.
 
-`latest` is moved by the last step of the run, after `X.Y.Z` is pushed. That step lists the repository's tags again and points `latest` at `X.Y.Z` only if it is the highest stable `vX.Y.Z` tag at that moment, so an older or backport tag never takes it over. If the smoke test or the push fails, `latest` stays where it was.
+`latest` is moved by the last step of the run, after `X.Y.Z` is pushed. That step lists the repository's tags again and points `latest` at `X.Y.Z` only if it is the highest stable `vX.Y.Z` tag at that moment, so an older or backport tag normally does not take it over. If the smoke test or the push fails, `latest` stays where it was.
 
 One small window remains: if a higher tag is pushed in the seconds between that check and the `latest` update of a lower tag's run, and the higher tag's run finishes first, the lower run can still point `latest` at the older release. To recover, re-run the higher tag's workflow run (it moves `latest` back), or avoid pushing release tags in quick succession.
 
