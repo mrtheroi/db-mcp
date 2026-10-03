@@ -5,6 +5,27 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.17.0] - 2026-10-03
+
+### Added
+
+- **memry Community Docker image**: a `Dockerfile` builds a self-hostable image of the server, served by FrankenPHP on PHP 8.4, with PostgreSQL as the only required dependency
+  - Multi-stage build (Vite assets, production-only Composer dependencies); the container runs as a non-root `memry` user on port 8000, logs to stderr and has a healthcheck on `/up`
+  - The `memry` entrypoint takes `serve` (default: caches config, routes and views, then starts FrankenPHP), `migrate`, `scheduler` (`schedule:work`), `token <email>` (creates the user if needed and prints a new token) and `key` (prints a new `APP_KEY`); any other command is passed to `php artisan`
+  - Every command except `key` refuses to start when `APP_KEY` is empty or `DB_CONNECTION` is not `pgsql`
+  - `migrate` runs `migrate --force --isolated`, so several containers starting at once do not run migrations twice; `AUTO_MIGRATE=true` makes `serve` migrate before it starts
+- **Docker Compose setup**: `docker-compose.yml` with `app`, `scheduler`, `migrate` and `postgres` (PostgreSQL 16) services, configured from `docker/community.env.example`
+  - `MEMRY_IMAGE` selects the image: a local build (`memry-server:local`, the default) or a published release (`ghcr.io/mrtheroi/memry-server:<version>`)
+- **Published image on GHCR**: pushing a `vX.Y.Z` tag publishes a `linux/amd64` and `linux/arm64` image to `ghcr.io/mrtheroi/memry-server`, tagged `X.Y.Z` (no floating `X.Y` tags)
+  - The image is pushed only after the smoke test passes
+  - `latest` is moved at the end of the run, and only when the tag is the highest stable `vX.Y.Z` tag at that moment, so an older or backport tag never takes it over
+- **Docker smoke test and CI**: `docker/smoke.sh` builds the image, starts PostgreSQL, migrates, starts the app, issues a token through the entrypoint and checks that `/mcp/memory` lists the six memory tools; the `docker` workflow runs it on every pull request and push to `main`
+- **`TRUSTED_PROXIES`**: a new `config/trustedproxy.php` reads `TRUSTED_PROXIES` (`*` for the calling proxy, or a comma separated list of addresses / CIDR ranges), so `X-Forwarded-*` headers are honoured behind a TLS-terminating reverse proxy
+  - Unset by default: forwarded headers are ignored, and Laravel Cloud keeps working as before
+- **Self-hosting guide**: `docs/self-hosting.md`, linked from the README, covers the published image and source builds, entrypoint commands, an existing PostgreSQL, migrations, users and tokens, connecting agents (memry CLI 0.6.0+ token prompt or `claude mcp add`), email login, reverse proxy and TLS, upgrades, backups, the smoke test and the release process
+
+---
+
 ## [0.16.0] - 2026-09-29
 
 ### Added
