@@ -11,22 +11,14 @@ The server sends no telemetry. It only talks to your database and, if you config
 
 ## Quick start
 
-If the checkout already has a `.env` (for example, a Laravel development setup), do not overwrite it: copy the example elsewhere instead and pass it to every Compose command with `--env-file`, which Compose then reads instead of `.env`. Wherever this guide says to edit `.env`, edit that file instead:
+Use a checkout dedicated to the server. Compose reads the `.env` next to `docker-compose.yml`, so do not run it from a development checkout that already has its own `.env`; clone the repository again instead:
 
 ```bash
-cp docker/community.env.example ~/memry-community.env
-alias dc='docker compose --env-file ~/memry-community.env'
-dc build                                              # builds memry-server:local
-dc run --rm --no-deps app key                         # prints an APP_KEY
-# edit ~/memry-community.env: paste APP_KEY, set APP_URL and a strong DB_PASSWORD
-dc run --rm migrate
-dc up -d app scheduler
-curl http://localhost:8000/up                         # 200 when healthy
+git clone https://github.com/mrtheroi/memry-server.git memry-community
+cd memry-community
 ```
 
-Use `dc` in place of `docker compose` in the rest of this guide.
-
-Otherwise, from a checkout of this repository:
+Then:
 
 ```bash
 cp -n docker/community.env.example .env               # -n never overwrites an existing .env
