@@ -23,6 +23,13 @@ docker compose up -d app scheduler
 curl http://localhost:8000/up                         # 200 when healthy
 ```
 
+If the checkout already has a `.env` (for example, a Laravel development setup), do not overwrite it: copy the example elsewhere and pass it to every Compose command with `--env-file`, which Compose then reads instead of `.env`:
+
+```bash
+cp docker/community.env.example ~/memry-community.env
+docker compose --env-file ~/memry-community.env build
+```
+
 Services in `docker-compose.yml`:
 
 | Service | What it does |
@@ -76,11 +83,13 @@ Tokens are shown once; store them like passwords.
 
 ## Connecting agents
 
-With the [memry CLI](https://github.com/mrtheroi/memry-cli):
+With the [memry CLI](https://github.com/mrtheroi/memry-cli) 0.6.0 or newer:
 
 ```bash
-memry setup --url https://memry.example.com --token <token>
+memry setup --url https://memry.example.com --token   # asks for the token, hidden
 ```
+
+`--url` is required with `--token`, so the token is only sent to your server. For scripts, `--token=<token>` skips the prompt, but the token then ends up in the shell history.
 
 Or add the MCP server to Claude Code directly:
 
