@@ -21,6 +21,8 @@ memry setup
 
 Local setup, tests, configuration, deployment and the rest of the developer reference start at [docs/development.md](docs/development.md).
 
+To run your own server with Docker and PostgreSQL (memry Community), see [docs/self-hosting.md](docs/self-hosting.md).
+
 ## License
 
 memry-server is released under the [MIT license](LICENSE).
