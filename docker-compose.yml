@@ -4,6 +4,11 @@
 #   docker compose up -d --build
 #   docker compose run --rm app token you@example.com
 #
+# Published image instead of a local build: set MEMRY_IMAGE in .env, e.g.
+#   MEMRY_IMAGE=ghcr.io/mrtheroi/memry-server:<version>
+# then run `docker compose pull` before starting. `build: .` is only used when
+# the image is missing locally, so a source checkout can still build it.
+#
 # See docs/self-hosting.md for details.
 
 x-app: &app

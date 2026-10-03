@@ -11,7 +11,44 @@ The server sends no telemetry. It only talks to your database and, if you config
 
 ## Quick start
 
-Use a checkout dedicated to the server. Compose reads the `.env` next to `docker-compose.yml`, so do not run it from a development checkout that already has its own `.env`; clone the repository again instead:
+There are two ways to run the server:
+
+- **Published image** (recommended): download two files and pull `ghcr.io/mrtheroi/memry-server`. No clone, no local build.
+- **Build from source**: clone the repository and build the image yourself.
+
+Either way, use a directory dedicated to the server. Compose reads the `.env` next to `docker-compose.yml`, so do not run it from a development checkout that already has its own `.env`.
+
+### Using the published image
+
+An image is published to `ghcr.io/mrtheroi/memry-server` for `linux/amd64` and `linux/arm64` when a server release is tagged (`vX.Y.Z`). Each release is tagged `X.Y.Z`; `latest` points to the newest stable release. Pin a release in production; the [tags](https://github.com/mrtheroi/memry-server/tags) and the [CHANGELOG](../CHANGELOG.md) list them.
+
+Download the Compose file and the example configuration from the same release tag (replace `<version>` with a release tag without the `v`):
+
+```bash
+mkdir memry-community && cd memry-community
+VERSION=<version>
+curl -fsSLo docker-compose.yml "https://raw.githubusercontent.com/mrtheroi/memry-server/v${VERSION}/docker-compose.yml"
+curl -fsSLo .env "https://raw.githubusercontent.com/mrtheroi/memry-server/v${VERSION}/docker/community.env.example"
+```
+
+Then:
+
+```bash
+sed -i.bak "s|^MEMRY_IMAGE=.*|MEMRY_IMAGE=ghcr.io/mrtheroi/memry-server:${VERSION}|" .env
+docker compose pull app                               # pulls the image set in MEMRY_IMAGE
+docker compose run --rm --no-deps app key             # prints an APP_KEY
+# edit .env: paste APP_KEY, set APP_URL and a strong DB_PASSWORD
+docker compose run --rm migrate
+docker compose up -d app scheduler
+curl http://localhost:8000/up                         # 200 when healthy
+docker compose run --rm app token you@example.com     # prints "Token: ..." once
+```
+
+`docker compose pull` (without `app`) also pulls PostgreSQL. Only `docker-compose.yml` and `.env` are needed; the `build: .` entry in the Compose file is unused while the image is present.
+
+### Building from source
+
+Clone the repository into a dedicated checkout:
 
 ```bash
 git clone https://github.com/mrtheroi/memry-server.git memry-community
@@ -22,7 +59,7 @@ Then:
 
 ```bash
 cp -n docker/community.env.example .env               # -n never overwrites an existing .env
-docker compose build                                  # builds memry-server:local
+docker compose build                                  # builds memry-server:local (MEMRY_IMAGE)
 docker compose run --rm --no-deps app key             # prints an APP_KEY
 # edit .env: paste APP_KEY, set APP_URL and a strong DB_PASSWORD
 docker compose run --rm migrate
@@ -122,6 +159,19 @@ Agents send bearer tokens on every request, so do not expose the server over pla
 
 ## Upgrades
 
+Read the [CHANGELOG](../CHANGELOG.md) first, then run migrations after updating the image.
+
+With the published image, set `MEMRY_IMAGE` in `.env` to the new release and pull it. Download that release's `docker-compose.yml` and `community.env.example` again and compare them with your copies, since new settings can appear:
+
+```bash
+# edit .env: MEMRY_IMAGE=ghcr.io/mrtheroi/memry-server:<new-version>
+docker compose pull app
+docker compose run --rm migrate
+docker compose up -d app scheduler
+```
+
+From a source checkout:
+
 ```bash
 git pull
 docker compose build
@@ -143,4 +193,18 @@ Keep `APP_KEY` stable across restores and upgrades: login codes are signed with 
 
 ## Smoke test
 
-`docker/smoke.sh` builds the image, starts PostgreSQL, migrates, starts the app, issues a token and checks that `/mcp/memory` lists the six memory tools. It removes its containers and volumes when done. CI runs the same script (`.github/workflows/docker.yml`).
+`docker/smoke.sh` builds the image, starts PostgreSQL, migrates, starts the app, issues a token and checks that `/mcp/memory` lists the six memory tools. It removes its containers and volumes when done. CI runs the same script on every pull request and push to `main` (`.github/workflows/docker.yml`); on a release tag the image is published to GHCR only after the smoke test passes.
+
+## Releasing (maintainers)
+
+Pushing a `vX.Y.Z` tag runs `.github/workflows/docker.yml`: it smoke tests the image, then publishes the immutable `X.Y.Z` tag to `ghcr.io/mrtheroi/memry-server`. There are no floating `X.Y` tags. Every tag gets its own run; runs for different tags are neither queued behind each other nor cancelled.
+
+`latest` is moved by the last step of the run, after `X.Y.Z` is pushed. That step lists the repository's tags again and points `latest` at `X.Y.Z` only if it is the highest stable `vX.Y.Z` tag at that moment, so an older or backport tag never takes it over. If the smoke test or the push fails, `latest` stays where it was.
+
+One small window remains: if a higher tag is pushed in the seconds between that check and the `latest` update of a lower tag's run, and the higher tag's run finishes first, the lower run can still point `latest` at the older release. To recover, re-run the higher tag's workflow run (it moves `latest` back), or avoid pushing release tags in quick succession.
+
+New GHCR packages are private, and the workflow cannot change that: GitHub offers no API for package visibility, so it is a one-time manual step. After the first tagged release:
+
+1. Open the package (repository → Packages → `memry-server`) → Package settings → Change visibility → Public.
+2. In the same settings, check that the package is connected to the `mrtheroi/memry-server` repository (Connect repository if it is not).
+3. Before announcing the image, check that an anonymous pull works, for example `docker logout ghcr.io && docker pull ghcr.io/mrtheroi/memry-server:<version>`.
