@@ -23,7 +23,7 @@ docker compose up -d app scheduler
 curl http://localhost:8000/up                         # 200 when healthy
 ```
 
-If the checkout already has a `.env` (for example, a Laravel development setup), do not overwrite it: copy the example elsewhere and pass it to every Compose command with `--env-file`, which Compose then reads instead of `.env`:
+If the checkout already has a `.env` (for example, a Laravel development setup), do not overwrite it: copy the example elsewhere and pass it to every Compose command with `--env-file`, which Compose then reads instead of `.env`. Wherever this guide says to edit `.env`, edit that file instead:
 
 ```bash
 cp docker/community.env.example ~/memry-community.env
