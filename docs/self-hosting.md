@@ -11,10 +11,17 @@ The server sends no telemetry. It only talks to your database and, if you config
 
 ## Quick start
 
-From a checkout of this repository:
+Use a checkout dedicated to the server. Compose reads the `.env` next to `docker-compose.yml`, so do not run it from a development checkout that already has its own `.env`; clone the repository again instead:
 
 ```bash
-cp docker/community.env.example .env
+git clone https://github.com/mrtheroi/memry-server.git memry-community
+cd memry-community
+```
+
+Then:
+
+```bash
+cp -n docker/community.env.example .env               # -n never overwrites an existing .env
 docker compose build                                  # builds memry-server:local
 docker compose run --rm --no-deps app key             # prints an APP_KEY
 # edit .env: paste APP_KEY, set APP_URL and a strong DB_PASSWORD
@@ -76,11 +83,13 @@ Tokens are shown once; store them like passwords.
 
 ## Connecting agents
 
-With the [memry CLI](https://github.com/mrtheroi/memry-cli):
+With the [memry CLI](https://github.com/mrtheroi/memry-cli) 0.6.0 or newer:
 
 ```bash
-memry setup --url https://memry.example.com --token <token>
+memry setup --url https://memry.example.com --token   # asks for the token, hidden
 ```
+
+`--url` is required with `--token`, so the token is only sent to your server. For scripts, `--token="$MEMRY_TOKEN"` skips the prompt. Keep the quotes: tokens contain a `|`, which the shell would otherwise read as a pipe. A token typed on the command line ends up in the shell history.
 
 Or add the MCP server to Claude Code directly:
 
