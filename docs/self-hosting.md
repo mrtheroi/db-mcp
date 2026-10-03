@@ -11,23 +11,23 @@ The server sends no telemetry. It only talks to your database and, if you config
 
 ## Quick start
 
-From a checkout of this repository:
+If the checkout already has a `.env` (for example, a Laravel development setup), do not overwrite it: copy the example elsewhere instead and pass it to every Compose command with `--env-file`, which Compose then reads instead of `.env`. Wherever this guide says to edit `.env`, edit that file instead:
 
 ```bash
-cp docker/community.env.example .env
+cp docker/community.env.example ~/memry-community.env
+docker compose --env-file ~/memry-community.env build
+```
+
+Otherwise, from a checkout of this repository:
+
+```bash
+cp -n docker/community.env.example .env               # -n never overwrites an existing .env
 docker compose build                                  # builds memry-server:local
 docker compose run --rm --no-deps app key             # prints an APP_KEY
 # edit .env: paste APP_KEY, set APP_URL and a strong DB_PASSWORD
 docker compose run --rm migrate
 docker compose up -d app scheduler
 curl http://localhost:8000/up                         # 200 when healthy
-```
-
-If the checkout already has a `.env` (for example, a Laravel development setup), do not overwrite it: copy the example elsewhere and pass it to every Compose command with `--env-file`, which Compose then reads instead of `.env`. Wherever this guide says to edit `.env`, edit that file instead:
-
-```bash
-cp docker/community.env.example ~/memry-community.env
-docker compose --env-file ~/memry-community.env build
 ```
 
 Services in `docker-compose.yml`:
@@ -89,7 +89,7 @@ With the [memry CLI](https://github.com/mrtheroi/memry-cli) 0.6.0 or newer:
 memry setup --url https://memry.example.com --token   # asks for the token, hidden
 ```
 
-`--url` is required with `--token`, so the token is only sent to your server. For scripts, `--token=<token>` skips the prompt, but the token then ends up in the shell history.
+`--url` is required with `--token`, so the token is only sent to your server. For scripts, `--token="$MEMRY_TOKEN"` skips the prompt. Keep the quotes: tokens contain a `|`, which the shell would otherwise read as a pipe. A token typed on the command line ends up in the shell history.
 
 Or add the MCP server to Claude Code directly:
 
