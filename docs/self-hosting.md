@@ -194,3 +194,13 @@ Keep `APP_KEY` stable across restores and upgrades: login codes are signed with 
 ## Smoke test
 
 `docker/smoke.sh` builds the image, starts PostgreSQL, migrates, starts the app, issues a token and checks that `/mcp/memory` lists the six memory tools. It removes its containers and volumes when done. CI runs the same script on every pull request and push to `main` (`.github/workflows/docker.yml`); on a release tag the image is published to GHCR only after the smoke test passes.
+
+## Releasing (maintainers)
+
+Pushing a `vX.Y.Z` tag runs `.github/workflows/docker.yml`: it smoke tests the image, then publishes `X.Y.Z` and `X.Y` to `ghcr.io/mrtheroi/memry-server`. `latest` only moves when the tag is the highest stable `vX.Y.Z` tag in the repository, so a backport tag does not overwrite it. Tag publishes run one at a time.
+
+New GHCR packages are private, and the workflow cannot change that: GitHub offers no API for package visibility, so it is a one-time manual step. After the first tagged release:
+
+1. Open the package (repository → Packages → `memry-server`) → Package settings → Change visibility → Public.
+2. In the same settings, check that the package is connected to the `mrtheroi/memry-server` repository (Connect repository if it is not).
+3. Before announcing the image, check that an anonymous pull works, for example `docker logout ghcr.io && docker pull ghcr.io/mrtheroi/memry-server:<version>`.
