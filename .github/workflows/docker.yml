@@ -2,7 +2,8 @@ name: docker
 
 # Pull requests and pushes to main: build the image and smoke test it (nothing
 # is pushed). A pushed release tag (vX.Y.Z): build, smoke test the amd64 image,
-# then publish the multi-arch image to ghcr.io/<owner>/memry-server.
+# then publish the multi-arch image to ghcr.io/<owner>/memry-server as X.Y.Z,
+# and as latest when the tag is the highest stable release.
 on:
   push:
     branches: [main]
@@ -12,10 +13,10 @@ on:
 permissions:
   contents: read
 
-# Branch and PR runs cancel superseded runs. Tag publishes share one group and
-# never cancel a run in progress, so they are serialized.
+# One group per ref: branch and PR runs cancel superseded runs; every tag gets
+# its own run, which is never cancelled.
 concurrency:
-  group: ${{ startsWith(github.ref, 'refs/tags/v') && 'docker-publish' || format('docker-{0}', github.ref) }}
+  group: docker-${{ github.ref }}
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') }}
 
 env:
@@ -32,9 +33,6 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          # Tag publishes need every tag to decide whether this one is latest.
-          fetch-depth: ${{ env.PUBLISH == 'true' && '0' || '1' }}
 
       - name: Set up QEMU (arm64 build)
         if: env.PUBLISH == 'true'
@@ -59,23 +57,6 @@ jobs:
           MEMRY_IMAGE: memry-server:ci
         run: docker/smoke.sh
 
-      # `latest` moves only when this tag is the highest stable vX.Y.Z tag, so an
-      # out-of-order or backport tag cannot overwrite it.
-      - name: Decide whether this tag is latest
-        if: env.PUBLISH == 'true'
-        id: latest
-        env:
-          TAG: ${{ github.ref_name }}
-        run: |
-          highest="$(git tag --list 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1 || true)"
-          if [ -n "$highest" ] && [ "$TAG" = "$highest" ]; then
-            is_latest=true
-          else
-            is_latest=false
-          fi
-          echo "highest stable tag: ${highest:-none}, this tag: ${TAG}, latest: ${is_latest}"
-          echo "is_latest=${is_latest}" >> "$GITHUB_OUTPUT"
-
       - name: Image metadata
         if: env.PUBLISH == 'true'
         id: meta
@@ -85,10 +66,7 @@ jobs:
         with:
           images: ${{ env.IMAGE }}
           flavor: latest=false
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ steps.latest.outputs.is_latest }}
+          tags: type=semver,pattern={{version}}
           labels: |
             org.opencontainers.image.title=memry-server
             org.opencontainers.image.description=memry Community, the self-hosted memry MCP memory server
@@ -120,3 +98,22 @@ jobs:
           annotations: ${{ steps.meta.outputs.annotations }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Checked against the remote tags right before moving latest (not at the
+      # start of the run), so an older or backport tag never takes it over.
+      - name: Point latest at this release if it is the highest stable tag
+        if: env.PUBLISH == 'true'
+        env:
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          highest="$(git ls-remote --tags --refs origin 'refs/tags/v*' \
+            | sed 's|.*refs/tags/||' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | sort -V | tail -n 1 || true)"
+          echo "highest stable tag: ${highest:-none}, this tag: ${TAG}"
+          if [ "$TAG" != "$highest" ]; then
+            echo "Not the highest stable tag; latest is left unchanged."
+            exit 0
+          fi
+          docker buildx imagetools create --tag "${IMAGE}:latest" "${IMAGE}:${VERSION}"

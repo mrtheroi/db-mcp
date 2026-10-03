@@ -20,7 +20,7 @@ Either way, use a directory dedicated to the server. Compose reads the `.env` ne
 
 ### Using the published image
 
-An image is published to `ghcr.io/mrtheroi/memry-server` for `linux/amd64` and `linux/arm64` when a server release is tagged (`vX.Y.Z`). Each release is tagged `X.Y.Z` and `X.Y`; `latest` points to the newest release. Pin a release in production; the [tags](https://github.com/mrtheroi/memry-server/tags) and the [CHANGELOG](../CHANGELOG.md) list them.
+An image is published to `ghcr.io/mrtheroi/memry-server` for `linux/amd64` and `linux/arm64` when a server release is tagged (`vX.Y.Z`). Each release is tagged `X.Y.Z`; `latest` points to the newest stable release. Pin a release in production; the [tags](https://github.com/mrtheroi/memry-server/tags) and the [CHANGELOG](../CHANGELOG.md) list them.
 
 Download the Compose file and the example configuration from the same release tag (replace `<version>` with a release tag without the `v`):
 
@@ -197,7 +197,11 @@ Keep `APP_KEY` stable across restores and upgrades: login codes are signed with 
 
 ## Releasing (maintainers)
 
-Pushing a `vX.Y.Z` tag runs `.github/workflows/docker.yml`: it smoke tests the image, then publishes `X.Y.Z` and `X.Y` to `ghcr.io/mrtheroi/memry-server`. `latest` only moves when the tag is the highest stable `vX.Y.Z` tag in the repository, so a backport tag does not overwrite it. Tag publishes run one at a time.
+Pushing a `vX.Y.Z` tag runs `.github/workflows/docker.yml`: it smoke tests the image, then publishes the immutable `X.Y.Z` tag to `ghcr.io/mrtheroi/memry-server`. There are no floating `X.Y` tags. Every tag gets its own run; runs for different tags are neither queued behind each other nor cancelled.
+
+`latest` is moved by the last step of the run, after `X.Y.Z` is pushed. That step lists the repository's tags again and points `latest` at `X.Y.Z` only if it is the highest stable `vX.Y.Z` tag at that moment, so an older or backport tag never takes it over. If the smoke test or the push fails, `latest` stays where it was.
+
+One small window remains: if a higher tag is pushed in the seconds between that check and the `latest` update of a lower tag's run, and the higher tag's run finishes first, the lower run can still point `latest` at the older release. To recover, re-run the higher tag's workflow run (it moves `latest` back), or avoid pushing release tags in quick succession.
 
 New GHCR packages are private, and the workflow cannot change that: GitHub offers no API for package visibility, so it is a one-time manual step. After the first tagged release:
 
