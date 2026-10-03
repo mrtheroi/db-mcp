@@ -89,9 +89,10 @@ The image entrypoint accepts these commands (`docker compose run --rm app <comma
 | `scheduler` | `php artisan schedule:work` |
 | `token <email>` | Creates the user if needed and prints a new token |
 | `key` | Prints a new `APP_KEY` |
+| `php`, `sh`, `bash`, `frankenphp` | Run as-is, without `php artisan` (for example `sh` for a shell) |
 | anything else | Passed to `php artisan` (for example `memory:revoke you@example.com`) |
 
-Every command except `key` refuses to start when `APP_KEY` is empty or `DB_CONNECTION` is not `pgsql`.
+Every command except `key` and the raw `php`, `sh`, `bash` and `frankenphp` commands refuses to start when `APP_KEY` is empty or `DB_CONNECTION` is not `pgsql`.
 
 ## Using an existing PostgreSQL
 
@@ -105,7 +106,7 @@ Run migrations after the first install and after every upgrade:
 docker compose run --rm migrate
 ```
 
-Alternatively set `AUTO_MIGRATE=true` so `app` migrates before it starts serving. Migrations take a database lock, so several containers starting at once do not run them twice.
+Alternatively set `AUTO_MIGRATE=true` so `app` migrates before it starts serving. Once the database is initialised, migrations take a database lock, so several containers starting at once do not run them twice. On a brand-new database the cache table that holds that lock is created first, without the lock, so concurrent first migrations can race: for the first deployment, run `docker compose run --rm migrate` once before starting several `app` containers with `AUTO_MIGRATE=true`.
 
 ## Users and tokens
 

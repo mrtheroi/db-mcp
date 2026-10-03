@@ -11,14 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **memry Community Docker image**: a `Dockerfile` builds a self-hostable image of the server, served by FrankenPHP on PHP 8.4, with PostgreSQL as the only required dependency
   - Multi-stage build (Vite assets, production-only Composer dependencies); the container runs as a non-root `memry` user on port 8000, logs to stderr and has a healthcheck on `/up`
-  - The `memry` entrypoint takes `serve` (default: caches config, routes and views, then starts FrankenPHP), `migrate`, `scheduler` (`schedule:work`), `token <email>` (creates the user if needed and prints a new token) and `key` (prints a new `APP_KEY`); any other command is passed to `php artisan`
-  - Every command except `key` refuses to start when `APP_KEY` is empty or `DB_CONNECTION` is not `pgsql`
-  - `migrate` runs `migrate --force --isolated`, so several containers starting at once do not run migrations twice; `AUTO_MIGRATE=true` makes `serve` migrate before it starts
+  - The `memry` entrypoint takes `serve` (default: caches config, routes and views, then starts FrankenPHP), `migrate`, `scheduler` (`schedule:work`), `token <email>` (creates the user if needed and prints a new token) and `key` (prints a new `APP_KEY`); `php`, `sh`, `bash` and `frankenphp` run as-is, and any other command is passed to `php artisan`
+  - Every command except `key` and the raw `php`, `sh`, `bash` and `frankenphp` commands refuses to start when `APP_KEY` is empty or `DB_CONNECTION` is not `pgsql`
+  - `migrate` runs `migrate --force --isolated`, so once the database is initialised several containers starting at once do not run migrations twice; `AUTO_MIGRATE=true` makes `serve` migrate before it starts
+  - On a brand-new database the cache table that holds that lock is first created without it, so concurrent first migrations can race: for the first deployment, run the one-off `migrate` service once before starting several app containers with `AUTO_MIGRATE`
 - **Docker Compose setup**: `docker-compose.yml` with `app`, `scheduler`, `migrate` and `postgres` (PostgreSQL 16) services, configured from `docker/community.env.example`
   - `MEMRY_IMAGE` selects the image: a local build (`memry-server:local`, the default) or a published release (`ghcr.io/mrtheroi/memry-server:<version>`)
 - **Published image on GHCR**: pushing a `vX.Y.Z` tag publishes a `linux/amd64` and `linux/arm64` image to `ghcr.io/mrtheroi/memry-server`, tagged `X.Y.Z` (no floating `X.Y` tags)
   - The image is pushed only after the smoke test passes
-  - `latest` is moved at the end of the run, and only when the tag is the highest stable `vX.Y.Z` tag at that moment, so an older or backport tag never takes it over
+  - `latest` is moved at the end of the run, and only when the tag is the highest stable `vX.Y.Z` tag at that moment, so an older or backport tag normally does not take it over
+  - One race window remains: if a higher tag is pushed between that check and a lower tag's `latest` update, and the higher tag's run finishes first, `latest` can end up on the older release; re-running the higher tag's workflow run moves it back (see `docs/self-hosting.md`)
 - **Docker smoke test and CI**: `docker/smoke.sh` builds the image, starts PostgreSQL, migrates, starts the app, issues a token through the entrypoint and checks that `/mcp/memory` lists the six memory tools; the `docker` workflow runs it on every pull request and push to `main`
 - **`TRUSTED_PROXIES`**: a new `config/trustedproxy.php` reads `TRUSTED_PROXIES` (`*` for the calling proxy, or a comma separated list of addresses / CIDR ranges), so `X-Forwarded-*` headers are honoured behind a TLS-terminating reverse proxy
   - Unset by default: forwarded headers are ignored, and Laravel Cloud keeps working as before
